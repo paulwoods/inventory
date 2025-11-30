@@ -39,7 +39,7 @@ export type ItemInput = {
     description?: string;
 };
 
-export type Maintenance = {
+export type Procedure = {
     id: string;
     name: string;
     procedure: string; // markdown
@@ -47,7 +47,7 @@ export type Maintenance = {
     updatedAt: string; // ISO
 };
 
-export type MaintenanceInput = {
+export type ProcedureInput = {
     name: string;
     procedure: string;
 };
@@ -101,7 +101,7 @@ export function validateLocationInput(input: Partial<LocationInput>): string | n
     return null;
 }
 
-export function validateMaintenanceInput(input: Partial<MaintenanceInput>): string | null {
+export function validateProcedureInput(input: Partial<ProcedureInput>): string | null {
     const name = input.name ?? '';
     const procedure = input.procedure ?? '';
     if (typeof name !== 'string' || name.trim().length === 0) {

@@ -1,9 +1,9 @@
-import MaintenancesList from '@/components/MaintenancesList';
+import ProceduresList from '@/components/ProceduresList';
 import TitleBar from '@/components/TitleBar';
 
 export const dynamic = 'force-dynamic';
 
-export default function MaintenancePage() {
+export default function ProcedurePage() {
     return (
         <main style={{
             minHeight: '100vh',
@@ -15,10 +15,10 @@ export default function MaintenancePage() {
             padding: '2rem'
         }}>
             <TitleBar/>
-            <h1>Maintenance</h1>
-            <p style={{color: 'var(--muted)'}}>Manage global maintenance procedures. Procedure content supports
+            <h1>Procedures</h1>
+            <p style={{color: 'var(--muted)'}}>Manage maintenance procedures. Procedure content supports
                 Markdown.</p>
-            <MaintenancesList/>
+            <ProceduresList/>
         </main>
     );
 }

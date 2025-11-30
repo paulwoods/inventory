@@ -1,41 +1,41 @@
 import {promises as fs} from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import type {Maintenance, MaintenanceInput} from '@/lib/types';
+import type {Procedure, ProcedureInput} from '@/lib/types';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
-const MAINTENANCE_FILE = path.join(DATA_DIR, 'maintenances.json');
+const PROCEDURE_FILE = path.join(DATA_DIR, 'procedures.json');
 
 let writeQueue: Promise<void> = Promise.resolve();
 
 async function ensureDataFile() {
     try {
         await fs.mkdir(DATA_DIR, {recursive: true});
-        await fs.access(MAINTENANCE_FILE);
+        await fs.access(PROCEDURE_FILE);
     } catch {
-        await fs.writeFile(MAINTENANCE_FILE, '[]', 'utf8');
+        await fs.writeFile(PROCEDURE_FILE, '[]', 'utf8');
     }
 }
 
-export async function readMaintenances(): Promise<Maintenance[]> {
+export async function readProcedures(): Promise<Procedure[]> {
     await ensureDataFile();
-    const raw = await fs.readFile(MAINTENANCE_FILE, 'utf8');
+    const raw = await fs.readFile(PROCEDURE_FILE, 'utf8');
     try {
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) return parsed as Maintenance[];
+        if (Array.isArray(parsed)) return parsed as Procedure[];
         return [];
     } catch {
         return [];
     }
 }
 
-async function atomicWrite(items: Maintenance[]): Promise<void> {
-    const tmp = MAINTENANCE_FILE + '.tmp';
+async function atomicWrite(items: Procedure[]): Promise<void> {
+    const tmp = PROCEDURE_FILE + '.tmp';
     await fs.writeFile(tmp, JSON.stringify(items, null, 2) + '\n', 'utf8');
-    await fs.rename(tmp, MAINTENANCE_FILE);
+    await fs.rename(tmp, PROCEDURE_FILE);
 }
 
-export async function writeMaintenances(items: Maintenance[]): Promise<void> {
+export async function writeProcedures(items: Procedure[]): Promise<void> {
     writeQueue = writeQueue.then(() => atomicWrite(items));
     return writeQueue;
 }
@@ -48,14 +48,14 @@ function newId() {
     return crypto.randomUUID?.() ?? crypto.createHash('sha256').update(Math.random().toString() + Date.now()).digest('hex').slice(0, 32);
 }
 
-export async function listMaintenances(): Promise<Maintenance[]> {
-    const all = await readMaintenances();
+export async function listProcedures(): Promise<Procedure[]> {
+    const all = await readProcedures();
     return [...all].sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
 }
 
-export async function createMaintenance(input: MaintenanceInput): Promise<Maintenance> {
-    const all = await readMaintenances();
-    const m: Maintenance = {
+export async function createProcedure(input: ProcedureInput): Promise<Procedure> {
+    const all = await readProcedures();
+    const m: Procedure = {
         id: newId(),
         name: input.name.trim(),
         procedure: input.procedure.trim(),
@@ -63,35 +63,35 @@ export async function createMaintenance(input: MaintenanceInput): Promise<Mainte
         updatedAt: nowISO(),
     };
     all.push(m);
-    await writeMaintenances(all);
+    await writeProcedures(all);
     return m;
 }
 
-export async function getMaintenance(id: string): Promise<Maintenance | undefined> {
-    const all = await readMaintenances();
+export async function getProcedure(id: string): Promise<Procedure | undefined> {
+    const all = await readProcedures();
     return all.find(m => m.id === id);
 }
 
-export async function updateMaintenance(id: string, input: Partial<MaintenanceInput>): Promise<Maintenance | undefined> {
-    const all = await readMaintenances();
+export async function updateProcedure(id: string, input: Partial<ProcedureInput>): Promise<Procedure | undefined> {
+    const all = await readProcedures();
     const idx = all.findIndex(m => m.id === id);
     if (idx === -1) return undefined;
     const current = all[idx];
-    const updated: Maintenance = {
+    const updated: Procedure = {
         ...current,
         name: input.name !== undefined ? input.name.trim() : current.name,
         procedure: input.procedure !== undefined ? input.procedure.trim() : current.procedure,
         updatedAt: nowISO(),
     };
     all[idx] = updated;
-    await writeMaintenances(all);
+    await writeProcedures(all);
     return updated;
 }
 
-export async function deleteMaintenance(id: string): Promise<boolean> {
-    const all = await readMaintenances();
+export async function deleteProcedure(id: string): Promise<boolean> {
+    const all = await readProcedures();
     const filtered = all.filter(m => m.id !== id);
     if (filtered.length === all.length) return false;
-    await writeMaintenances(filtered);
+    await writeProcedures(filtered);
     return true;
 }

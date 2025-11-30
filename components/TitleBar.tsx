@@ -21,14 +21,14 @@ export default function TitleBar() {
                     color: 'white',
                     textDecoration: 'none'
                 }}>Home</Link>
-                <Link href="/maintenance" style={{
+                <Link href="/procedure" style={{
                     padding: '0.35rem 0.7rem',
                     borderRadius: 6,
                     border: '1px solid #2a3550',
                     background: '#10203a',
                     color: 'white',
                     textDecoration: 'none'
-                }}>Maintenance</Link>
+                }}>Procedures</Link>
             </nav>
         </header>
     );

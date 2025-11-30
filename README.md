@@ -86,22 +86,22 @@ Items CRUD (per Location)
     - The Location page shows an Items manager to create, edit, delete, and refresh Items belonging to that Location.
     - Deleting a Location cascades and removes its Items from storage.
 
-Maintenance CRUD (Global)
+Procedure CRUD (Global)
 
-- Entity: Maintenance
+- Entity: Procedure
     - name: required, max 100 chars
     - procedure: required, max 4000 chars (Markdown content)
 
-- Storage: simple JSON file at data/maintenances.json (auto-created)
+- Storage: simple JSON file at data/procedures.json (auto-created)
 
 - API Endpoints
-    - GET /api/maintenance — list all maintenance procedures
-    - POST /api/maintenance — create
+    - GET /api/procedure — list all maintenance procedures
+    - POST /api/procedure — create
         - body: { "name": string, "procedure": string }
-    - GET /api/maintenance/:id — fetch one
-    - PUT /api/maintenance/:id — update
+    - GET /api/procedure/:id — fetch one
+    - PUT /api/procedure/:id — update
         - body: { "name": string, "procedure": string }
-    - DELETE /api/maintenance/:id — delete
+    - DELETE /api/procedure/:id — delete
 
 - UI
     - Navigate to /maintenance to manage global maintenance procedures.

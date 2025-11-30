@@ -1,12 +1,12 @@
 "use client";
 
 import {useEffect, useState} from 'react';
-import type {Maintenance} from '@/lib/types';
-import MaintenanceForm from '@/components/MaintenanceForm';
+import type {Procedure} from '@/lib/types';
+import ProcedureForm from '@/components/ProcedureForm';
 import ReactMarkdown from 'react-markdown';
 
-export default function MaintenancesList() {
-    const [items, setItems] = useState<Maintenance[]>([]);
+export default function ProceduresList() {
+    const [items, setItems] = useState<Procedure[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -17,10 +17,10 @@ export default function MaintenancesList() {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch(`/api/maintenance`, {cache: 'no-store'});
+            const res = await fetch(`/api/procedure`, {cache: 'no-store'});
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed to load');
-            const sorted: Maintenance[] = [...(data.data as Maintenance[])]
+            const sorted: Procedure[] = [...(data.data as Procedure[])]
                 .sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
             setItems(sorted);
         } catch (e: unknown) {
@@ -35,7 +35,7 @@ export default function MaintenancesList() {
         load();
     }, []);
 
-    function onCreated(m: Maintenance) {
+    function onCreated(m: Procedure) {
         setItems((prev) => {
             const next = [m, ...prev];
             next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
@@ -43,7 +43,7 @@ export default function MaintenancesList() {
         });
     }
 
-    function onSaved(updated: Maintenance) {
+    function onSaved(updated: Procedure) {
         setItems((prev) => {
             const next = prev.map((i) => (i.id === updated.id ? updated : i));
             next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
@@ -53,10 +53,10 @@ export default function MaintenancesList() {
     }
 
     async function onDelete(id: string) {
-        if (!confirm('Delete this maintenance procedure?')) return;
+        if (!confirm('Delete this procedure?')) return;
         setDeletingId(id);
         try {
-            const res = await fetch(`/api/maintenance/${id}`, {method: 'DELETE'});
+            const res = await fetch(`/api/procedure/${id}`, {method: 'DELETE'});
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed to delete');
             setItems((prev) => {
@@ -75,7 +75,7 @@ export default function MaintenancesList() {
         <div style={{display: 'grid', gap: '1rem', width: '100%', maxWidth: 800}}>
             <section style={{padding: '1rem', border: '1px solid #2a3550', borderRadius: 8, background: '#0b1230'}}>
                 <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-                    <h2>Maintenance</h2>
+                    <h2>Procedures</h2>
                     <div style={{display: 'flex', gap: '0.5rem'}}>
                         <button onClick={() => setCreating(true)} style={{
                             padding: '0.35rem 0.7rem',
@@ -103,7 +103,7 @@ export default function MaintenancesList() {
                     {items.map((m) => (
                         <li key={m.id} style={{border: '1px solid #223055', borderRadius: 8, padding: '0.75rem'}}>
                             {editingId === m.id ? (
-                                <MaintenanceForm
+                                <ProcedureForm
                                     mode="edit"
                                     initial={m}
                                     onCancel={() => setEditingId(null)}
@@ -158,7 +158,7 @@ export default function MaintenancesList() {
             </section>
 
             {creating && (
-                <div role="dialog" aria-modal="true" aria-label="Create Maintenance"
+                <div role="dialog" aria-modal="true" aria-label="Create Procedure"
                      style={{
                          position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
                          background: 'rgba(0,0,0,0.5)', padding: '1rem', zIndex: 1000
@@ -177,14 +177,14 @@ export default function MaintenancesList() {
                             alignItems: 'center',
                             marginBottom: '0.5rem'
                         }}>
-                            <h3 style={{margin: 0}}>Create Maintenance</h3>
+                            <h3 style={{margin: 0}}>Create Procedure</h3>
                             <button onClick={() => setCreating(false)} aria-label="Close" style={{
                                 padding: '0.25rem 0.5rem', borderRadius: 6, border: '1px solid #2a3550',
                                 background: 'transparent', color: 'white'
                             }}>✕
                             </button>
                         </div>
-                        <MaintenanceForm
+                        <ProcedureForm
                             mode="create"
                             onSaved={(m) => {
                                 onCreated(m);

@@ -1,16 +1,16 @@
 "use client";
 
 import {useEffect, useMemo, useState} from 'react';
-import type {Maintenance, MaintenanceInput} from '@/lib/types';
+import type {Procedure, ProcedureInput} from '@/lib/types';
 
 type Props = {
-    initial?: Partial<Maintenance>;
+    initial?: Partial<Procedure>;
     mode: 'create' | 'edit';
     onCancel?: () => void;
-    onSaved?: (m: Maintenance) => void;
+    onSaved?: (m: Procedure) => void;
 };
 
-export default function MaintenanceForm({initial, mode, onCancel, onSaved}: Props) {
+export default function ProcedureForm({initial, mode, onCancel, onSaved}: Props) {
     const [name, setName] = useState(initial?.name ?? '');
     const [procedure, setProcedure] = useState(initial?.procedure ?? '');
     const [submitting, setSubmitting] = useState(false);
@@ -35,16 +35,16 @@ export default function MaintenanceForm({initial, mode, onCancel, onSaved}: Prop
         setError(null);
         setSubmitting(true);
         try {
-            const payload: MaintenanceInput = {name: name.trim(), procedure: procedure.trim()};
+            const payload: ProcedureInput = {name: name.trim(), procedure: procedure.trim()};
             let res: Response;
             if (mode === 'create') {
-                res = await fetch('/api/maintenance', {
+                res = await fetch('/api/procedure', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(payload)
                 });
             } else {
-                res = await fetch(`/api/maintenance/${initial?.id}`, {
+                res = await fetch(`/api/procedure/${initial?.id}`, {
                     method: 'PUT',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(payload)
@@ -54,7 +54,7 @@ export default function MaintenanceForm({initial, mode, onCancel, onSaved}: Prop
             if (!res.ok || !data.ok) {
                 setError(data?.error || 'Failed to save.');
             } else {
-                onSaved?.(data.data as Maintenance);
+                onSaved?.(data.data as Procedure);
                 if (mode === 'create') {
                     setName('');
                     setProcedure('');

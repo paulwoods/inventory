@@ -205,6 +205,18 @@ export default function ItemsList({homeId, locationId}: Props) {
                                         </div>
                                         <div style={{display: 'flex', gap: '0.5rem'}}>
                                             <Link
+                                                href={`/homes/${homeId}/locations/${locationId}/items/${i.id}/view`}>
+                                                <button style={{
+                                                    padding: '0.35rem 0.7rem',
+                                                    borderRadius: 6,
+                                                    border: '1px solid #2a3550',
+                                                    background: '#10203a',
+                                                    color: 'white'
+                                                }}>
+                                                    View
+                                                </button>
+                                            </Link>
+                                            <Link
                                                 href={`/homes/${homeId}/locations/${locationId}/items/${i.id}/services`}>
                                                 <button style={{
                                                     padding: '0.35rem 0.7rem',

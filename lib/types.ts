@@ -70,6 +70,20 @@ export type ApiResponse<T> =
     | { ok: true; data: T }
     | { ok: false; error: string };
 
+// Equipment is a global entity with a name and zero-or-many linked procedures
+export type Equipment = {
+    id: string;
+    name: string;
+    procedureIds: string[]; // links to Procedure ids
+    createdAt: string; // ISO
+    updatedAt: string; // ISO
+};
+
+export type EquipmentInput = {
+    name: string;
+    procedureIds: string[];
+};
+
 export function validateHomeInput(input: Partial<HomeInput>): string | null {
     const name = input.name ?? '';
     const description = input.description ?? '';
@@ -144,6 +158,24 @@ export function validateServiceInput(input: Partial<ServiceInput>): string | nul
     }
     if (interval > 36500) {
         return 'Interval must be at most 36500 days.';
+    }
+    return null;
+}
+
+export function validateEquipmentInput(input: Partial<EquipmentInput>): string | null {
+    const name = input.name ?? '';
+    const procedureIds = input.procedureIds ?? [];
+    if (typeof name !== 'string' || name.trim().length === 0) {
+        return 'Name is required.';
+    }
+    if (name.trim().length > 100) {
+        return 'Name must be at most 100 characters.';
+    }
+    if (!Array.isArray(procedureIds)) {
+        return 'Procedures must be an array.';
+    }
+    for (const pid of procedureIds) {
+        if (typeof pid !== 'string') return 'Procedures must be an array of strings.';
     }
     return null;
 }

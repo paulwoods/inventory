@@ -4,7 +4,8 @@ import {type ApiResponse, type Home, validateHomeInput} from '@/lib/types';
 
 export async function GET() {
     const homes = await readHomes();
-    const body: ApiResponse<Home[]> = {ok: true, data: homes};
+    const sorted = [...homes].sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
+    const body: ApiResponse<Home[]> = {ok: true, data: sorted};
     return NextResponse.json(body, {status: 200});
 }
 

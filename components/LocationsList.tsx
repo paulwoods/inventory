@@ -22,7 +22,9 @@ export default function LocationsList({homeId}: Props) {
             const res = await fetch(`/api/homes/${homeId}/locations`, {cache: 'no-store'});
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed to load');
-            setLocations(data.data as Location[]);
+            const sorted: Location[] = [...(data.data as Location[])]
+                .sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
+            setLocations(sorted);
         } catch (e: any) {
             setError(e?.message || 'Failed to load');
         } finally {
@@ -35,11 +37,19 @@ export default function LocationsList({homeId}: Props) {
     }, [homeId]);
 
     function onCreated(loc: Location) {
-        setLocations((prev) => [loc, ...prev]);
+        setLocations((prev) => {
+            const next = [loc, ...prev];
+            next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
+            return next;
+        });
     }
 
     function onSaved(updated: Location) {
-        setLocations((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
+        setLocations((prev) => {
+            const next = prev.map((l) => (l.id === updated.id ? updated : l));
+            next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
+            return next;
+        });
         setEditingId(null);
     }
 
@@ -50,7 +60,11 @@ export default function LocationsList({homeId}: Props) {
             const res = await fetch(`/api/homes/${homeId}/locations/${id}`, {method: 'DELETE'});
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed to delete');
-            setLocations((prev) => prev.filter((l) => l.id !== id));
+            setLocations((prev) => {
+                const next = prev.filter((l) => l.id !== id);
+                next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
+                return next;
+            });
         } catch (e) {
             alert('Failed to delete');
         } finally {

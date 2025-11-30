@@ -19,7 +19,9 @@ export default function HomesList() {
             const res = await fetch('/api/homes', {cache: 'no-store'});
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed to load');
-            setHomes(data.data as Home[]);
+            const sorted: Home[] = [...(data.data as Home[])]
+                .sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
+            setHomes(sorted);
         } catch (e: any) {
             setError(e?.message || 'Failed to load');
         } finally {
@@ -32,11 +34,19 @@ export default function HomesList() {
     }, []);
 
     function onCreated(home: Home) {
-        setHomes((prev) => [home, ...prev]);
+        setHomes((prev) => {
+            const next = [home, ...prev];
+            next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
+            return next;
+        });
     }
 
     function onSaved(updated: Home) {
-        setHomes((prev) => prev.map((h) => (h.id === updated.id ? updated : h)));
+        setHomes((prev) => {
+            const next = prev.map((h) => (h.id === updated.id ? updated : h));
+            next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
+            return next;
+        });
         setEditingId(null);
     }
 
@@ -47,7 +57,11 @@ export default function HomesList() {
             const res = await fetch(`/api/homes/${id}`, {method: 'DELETE'});
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed to delete');
-            setHomes((prev) => prev.filter((h) => h.id !== id));
+            setHomes((prev) => {
+                const next = prev.filter((h) => h.id !== id);
+                next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
+                return next;
+            });
         } catch (e) {
             alert('Failed to delete');
         } finally {

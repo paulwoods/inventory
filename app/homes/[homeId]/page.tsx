@@ -14,7 +14,7 @@ export default async function HomeLocationsPage({params}: Params) {
             minHeight: '100vh',
             display: 'flex',
             alignItems: 'flex-start',
-            justifyContent: 'center',
+            justifyContent: 'flex-start',
             flexDirection: 'column',
             gap: '1rem',
             padding: '2rem'

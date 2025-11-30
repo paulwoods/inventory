@@ -50,7 +50,9 @@ function newId() {
 
 export async function listLocationsByHome(homeId: string): Promise<Location[]> {
     const all = await readLocations();
-    return all.filter(l => l.homeId === homeId).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    return all
+        .filter(l => l.homeId === homeId)
+        .sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
 }
 
 export async function createLocation(homeId: string, input: LocationInput): Promise<Location> {

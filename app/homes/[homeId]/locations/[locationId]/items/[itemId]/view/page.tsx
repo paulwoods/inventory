@@ -8,6 +8,8 @@ import {getEquipment} from '@/lib/storage/equipment';
 import {listServicesByItem} from '@/lib/storage/services';
 import {listProcedures} from '@/lib/storage/procedures';
 import ReactMarkdown from 'react-markdown';
+import CompleteServiceButton from '@/components/CompleteServiceButton';
+import {listWorksByService} from '@/lib/storage/work';
 
 type Params = { params: { homeId: string; locationId: string; itemId: string } };
 
@@ -32,6 +34,27 @@ export default async function ItemViewPage({params}: Params) {
     for (const p of procedures) {
         procBodyById[p.id] = p.procedure;
         procNameById[p.id] = p.name;
+    }
+
+    // Fetch work history and derive last completion info for each service
+    const lastDoneByService: Record<string, string | null> = {};
+    const daysSinceByService: Record<string, number | null> = {};
+    const worksByService: Record<string, { performedAt: string }[]> = {};
+    if (services.length > 0) {
+        const worksArrays = await Promise.all(services.map((s) => listWorksByService(s.id)));
+        services.forEach((s, idx) => {
+            const arr = worksArrays[idx];
+            worksByService[s.id] = arr.map(w => ({performedAt: w.performedAt}));
+            if (arr.length > 0) {
+                const performedAt = arr[0].performedAt;
+                lastDoneByService[s.id] = performedAt;
+                const days = Math.floor((Date.now() - new Date(performedAt).getTime()) / 86_400_000);
+                daysSinceByService[s.id] = days;
+            } else {
+                lastDoneByService[s.id] = null;
+                daysSinceByService[s.id] = null;
+            }
+        });
     }
 
     return (
@@ -100,6 +123,24 @@ export default async function ItemViewPage({params}: Params) {
                                                     {procBodyById[s.procedureId] || '*Unknown procedure*'}
                                                 </ReactMarkdown>
                                             </div>
+                                            <div style={{marginTop: '0.75rem'}}>
+                                                <CompleteServiceButton serviceId={s.id}/>
+                                            </div>
+                                            <span style={{fontSize: 12, color: '#7f8aa5'}}>
+                                                Last done: {lastDoneByService[s.id] ? new Date(lastDoneByService[s.id] as string).toLocaleString() : 'never'}{daysSinceByService[s.id] !== null ? ` (${daysSinceByService[s.id]} days)` : ''}
+                                            </span>
+                                            {worksByService[s.id] && worksByService[s.id].length > 0 && (
+                                                <div style={{marginTop: '0.5rem'}}>
+                                                    <div style={{fontWeight: 600, marginBottom: 4}}>History</div>
+                                                    <ul style={{margin: 0, paddingLeft: '1rem'}}>
+                                                        {worksByService[s.id].map((w, i) => (
+                                                            <li key={i} style={{color: '#a9b4c1', fontSize: 13}}>
+                                                                {new Date(w.performedAt).toLocaleString()}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </li>

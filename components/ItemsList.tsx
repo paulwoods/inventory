@@ -2,7 +2,7 @@
 
 import {useEffect, useMemo, useState} from 'react';
 import Link from 'next/link';
-import type {Equipment, Item, Procedure, Service} from '@/lib/types';
+import type {Equipment, Item, Procedure, Service, Work} from '@/lib/types';
 import ItemForm from '@/components/ItemForm';
 
 type Props = {
@@ -20,6 +20,7 @@ export default function ItemsList({homeId, locationId}: Props) {
     const [procedures, setProcedures] = useState<Procedure[]>([]);
     const [servicesByItem, setServicesByItem] = useState<Record<string, Service[]>>({});
     const [equipment, setEquipment] = useState<Equipment[]>([]);
+    const [lastDoneByService, setLastDoneByService] = useState<Record<string, string | null>>({});
 
     async function load() {
         setLoading(true);
@@ -59,6 +60,24 @@ export default function ItemsList({homeId, locationId}: Props) {
             setProcedures(procRes);
             setEquipment(eqRes);
             setServicesByItem(map);
+
+            // Fetch last completion date for each service
+            const allServiceIds = servicesList.flatMap(([, list]) => list.map(s => s.id));
+            const pairs = await Promise.all(allServiceIds.map(async (sid) => {
+                try {
+                    const r = await fetch(`/api/services/${sid}/work`, {cache: 'no-store'});
+                    const j = await r.json();
+                    if (!r.ok || !j.ok) throw new Error(j?.error || 'Failed to load work');
+                    const works: Work[] = (j.data as Work[]);
+                    const last = works.length > 0 ? works[0].performedAt : null;
+                    return [sid, last] as const;
+                } catch {
+                    return [sid, null] as const;
+                }
+            }));
+            const wd: Record<string, string | null> = {};
+            for (const [sid, last] of pairs) wd[sid] = last;
+            setLastDoneByService(wd);
         } catch (e: any) {
             setError(e?.message || 'Failed to load');
         } finally {
@@ -194,8 +213,17 @@ export default function ItemsList({homeId, locationId}: Props) {
                                                         }}>
                                                             <span>Services:</span>
                                                             {svcs.map((s) => (
-                                                                <span key={s.id} style={{paddingLeft: '0.75rem'}}>
-                                                                    {procNameById[s.procedureId] || 'Unknown'} ({s.interval} days)
+                                                                <span key={s.id} style={{
+                                                                    paddingLeft: '0.75rem',
+                                                                    display: 'flex',
+                                                                    flexDirection: 'column'
+                                                                }}>
+                                                                    <span>
+                                                                        {procNameById[s.procedureId] || 'Unknown'} ({s.interval} days)
+                                                                    </span>
+                                                                    <span style={{fontSize: 12, color: '#7f8aa5'}}>
+                                                                        Last done: {lastDoneByService[s.id] ? new Date(lastDoneByService[s.id] as string).toLocaleString() : 'never'}
+                                                                    </span>
                                                                 </span>
                                                             ))}
                                                         </div>

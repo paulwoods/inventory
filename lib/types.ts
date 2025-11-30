@@ -68,6 +68,19 @@ export type ServiceInput = {
     interval: number;
 };
 
+// Work tracks each time a Service is performed (child of Service)
+export type Work = {
+    id: string;
+    serviceId: string; // parent Service
+    performedAt: string; // ISO timestamp of when work was performed
+    createdAt: string; // ISO
+    updatedAt: string; // ISO
+};
+
+export type WorkInput = {
+    performedAt?: string; // optional; defaults to now if not provided
+};
+
 export type ApiResponse<T> =
     | { ok: true; data: T }
     | { ok: false; error: string };
@@ -178,6 +191,14 @@ export function validateEquipmentInput(input: Partial<EquipmentInput>): string |
     }
     for (const pid of procedureIds) {
         if (typeof pid !== 'string') return 'Procedures must be an array of strings.';
+    }
+    return null;
+}
+
+export function validateWorkInput(input: Partial<WorkInput>): string | null {
+    if (input.performedAt !== undefined) {
+        const d = new Date(String(input.performedAt));
+        if (isNaN(d.getTime())) return 'performedAt must be a valid ISO date-time string.';
     }
     return null;
 }

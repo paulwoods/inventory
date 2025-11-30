@@ -1,5 +1,6 @@
 import {NextResponse} from 'next/server';
 import {deleteService, getService, updateService} from '@/lib/storage/services';
+import {deleteWorksByService} from '@/lib/storage/work';
 import {type ApiResponse, type Service, validateServiceInput} from '@/lib/types';
 
 type Params = { params: { id: string } };
@@ -39,6 +40,8 @@ export async function PUT(req: Request, {params}: Params) {
 }
 
 export async function DELETE(_req: Request, {params}: Params) {
+    // Cascade delete works for this service
+    await deleteWorksByService(params.id);
     const ok = await deleteService(params.id);
     if (!ok) return NextResponse.json({ok: false, error: 'Service not found.'} as ApiResponse<never>, {status: 404});
     const body: ApiResponse<{ id: string }> = {ok: true, data: {id: params.id}};

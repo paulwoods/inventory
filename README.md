@@ -85,3 +85,25 @@ Items CRUD (per Location)
     - From a Home’s Locations page, click a Location name or Open to go to /homes/:homeId/locations/:locationId.
     - The Location page shows an Items manager to create, edit, delete, and refresh Items belonging to that Location.
     - Deleting a Location cascades and removes its Items from storage.
+
+Maintenance CRUD (Global)
+
+- Entity: Maintenance
+    - name: required, max 100 chars
+    - procedure: required, max 4000 chars (Markdown content)
+
+- Storage: simple JSON file at data/maintenances.json (auto-created)
+
+- API Endpoints
+    - GET /api/maintenance — list all maintenance procedures
+    - POST /api/maintenance — create
+        - body: { "name": string, "procedure": string }
+    - GET /api/maintenance/:id — fetch one
+    - PUT /api/maintenance/:id — update
+        - body: { "name": string, "procedure": string }
+    - DELETE /api/maintenance/:id — delete
+
+- UI
+    - Navigate to /maintenance to manage global maintenance procedures.
+    - Create is done in a dialog; Edit is inline; Delete with confirmation.
+    - Procedures are rendered as Markdown (using react-markdown).

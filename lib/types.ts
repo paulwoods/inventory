@@ -39,6 +39,19 @@ export type ItemInput = {
     description?: string;
 };
 
+export type Maintenance = {
+    id: string;
+    name: string;
+    procedure: string; // markdown
+    createdAt: string; // ISO
+    updatedAt: string; // ISO
+};
+
+export type MaintenanceInput = {
+    name: string;
+    procedure: string;
+};
+
 export type ApiResponse<T> =
     | { ok: true; data: T }
     | { ok: false; error: string };
@@ -84,6 +97,24 @@ export function validateLocationInput(input: Partial<LocationInput>): string | n
     }
     if (typeof description === 'string' && description.length > 1000) {
         return 'Description must be at most 1000 characters.';
+    }
+    return null;
+}
+
+export function validateMaintenanceInput(input: Partial<MaintenanceInput>): string | null {
+    const name = input.name ?? '';
+    const procedure = input.procedure ?? '';
+    if (typeof name !== 'string' || name.trim().length === 0) {
+        return 'Name is required.';
+    }
+    if (name.trim().length > 100) {
+        return 'Name must be at most 100 characters.';
+    }
+    if (typeof procedure !== 'string' || procedure.trim().length === 0) {
+        return 'Procedure is required.';
+    }
+    if (procedure.length > 4000) {
+        return 'Procedure must be at most 4000 characters.';
     }
     return null;
 }

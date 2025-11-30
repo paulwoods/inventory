@@ -1,0 +1,33 @@
+:root {
+    --bg: #0b1020;
+    --fg: #e6eef8;
+    --muted: #a9b4c1;
+    --accent: #6aa9ff;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+    Noto Sans, Ubuntu, Cantarell, Helvetica Neue, Arial, "Apple Color Emoji",
+    "Segoe UI Emoji";
+}
+
+a {
+    color: var(--accent);
+}
+
+code {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 0.15rem 0.35rem;
+    border-radius: 0.35rem;
+}
+
+h1, h2, h3 {
+    margin: 0.2rem 0;
+}

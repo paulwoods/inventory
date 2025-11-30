@@ -62,6 +62,7 @@ export async function createItem(locationId: string, input: ItemInput): Promise<
         locationId,
         name: input.name.trim(),
         description: input.description?.trim() || undefined,
+        equipmentId: input.equipmentId ? String(input.equipmentId) : undefined,
         createdAt: nowISO(),
         updatedAt: nowISO(),
     };
@@ -84,6 +85,9 @@ export async function updateItem(locationId: string, id: string, input: Partial<
         ...current,
         name: input.name !== undefined ? input.name.trim() : current.name,
         description: input.description !== undefined ? (input.description?.trim() || undefined) : current.description,
+        equipmentId: Object.prototype.hasOwnProperty.call(input, 'equipmentId')
+            ? (input.equipmentId ? String(input.equipmentId) : undefined)
+            : current.equipmentId,
         updatedAt: nowISO(),
     };
     all[idx] = updated;

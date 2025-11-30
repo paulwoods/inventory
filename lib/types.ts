@@ -30,6 +30,7 @@ export type Item = {
     locationId: string;
     name: string;
     description?: string;
+    equipmentId?: string; // one-to-one link to Equipment (optional)
     createdAt: string; // ISO
     updatedAt: string; // ISO
 };
@@ -37,6 +38,7 @@ export type Item = {
 export type ItemInput = {
     name: string;
     description?: string;
+    equipmentId?: string;
 };
 
 export type Procedure = {

@@ -1,7 +1,7 @@
 "use client";
 
 import {useEffect, useMemo, useState} from 'react';
-import type {Item, ItemInput} from '@/lib/types';
+import type {Equipment, Item, ItemInput} from '@/lib/types';
 
 type Props = {
     homeId: string;
@@ -15,13 +15,37 @@ type Props = {
 export default function ItemForm({homeId, locationId, initial, mode, onCancel, onSaved}: Props) {
     const [name, setName] = useState(initial?.name ?? '');
     const [description, setDescription] = useState(initial?.description ?? '');
+    const [equipment, setEquipment] = useState<Equipment[]>([]);
+    const [equipmentId, setEquipmentId] = useState<string>(initial?.equipmentId ?? '');
+    const [loadingEquipment, setLoadingEquipment] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         setName(initial?.name ?? '');
         setDescription(initial?.description ?? '');
-    }, [initial?.name, initial?.description]);
+        setEquipmentId(initial?.equipmentId ?? '');
+    }, [initial?.name, initial?.description, initial?.equipmentId]);
+
+    async function loadEquipment() {
+        setLoadingEquipment(true);
+        try {
+            const res = await fetch('/api/equipment', {cache: 'no-store'});
+            const data = await res.json();
+            if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed to load equipment');
+            const list: Equipment[] = (data.data as Equipment[]).slice().sort((a, b) => a.name.localeCompare(b.name));
+            setEquipment(list);
+        } catch (e: any) {
+            setError(e?.message || 'Failed to load equipment');
+        } finally {
+            setLoadingEquipment(false);
+        }
+    }
+
+    useEffect(() => {
+        loadEquipment();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const disabled = useMemo(() => {
         if (submitting) return true;
@@ -36,7 +60,11 @@ export default function ItemForm({homeId, locationId, initial, mode, onCancel, o
         setError(null);
         setSubmitting(true);
         try {
-            const payload: ItemInput = {name: name.trim(), description: description.trim() || undefined};
+            const payload: ItemInput = {
+                name: name.trim(),
+                description: description.trim() || undefined,
+                equipmentId: equipmentId ? equipmentId : undefined
+            };
             let res: Response;
             if (mode === 'create') {
                 res = await fetch(`/api/homes/${homeId}/locations/${locationId}/items`, {
@@ -59,6 +87,7 @@ export default function ItemForm({homeId, locationId, initial, mode, onCancel, o
                 if (mode === 'create') {
                     setName('');
                     setDescription('');
+                    setEquipmentId('');
                 }
             }
         } catch {
@@ -103,6 +132,26 @@ export default function ItemForm({homeId, locationId, initial, mode, onCancel, o
                         color: 'white'
                     }}
                 />
+            </label>
+            <label style={{display: 'flex', flexDirection: 'column', gap: '0.25rem'}}>
+                <span>Equipment (optional)</span>
+                <select
+                    value={equipmentId}
+                    onChange={(e) => setEquipmentId(e.target.value)}
+                    disabled={loadingEquipment}
+                    style={{
+                        padding: '0.5rem',
+                        borderRadius: 6,
+                        border: '1px solid #2a3550',
+                        background: '#0f1630',
+                        color: 'white'
+                    }}
+                >
+                    <option value="">None</option>
+                    {equipment.map((eq) => (
+                        <option key={eq.id} value={eq.id}>{eq.name}</option>
+                    ))}
+                </select>
             </label>
             {error && <div style={{color: '#ff8a8a'}}>{error}</div>}
             <div style={{display: 'flex', gap: '0.5rem'}}>

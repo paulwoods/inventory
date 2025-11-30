@@ -36,7 +36,8 @@ Homes CRUD
     - DELETE /api/homes/:id — delete
 
 - UI
-    - The home page shows a form to create a Home and a list of existing Homes with Edit/Delete actions.
+    - The home page shows a list of existing Homes with Edit/Delete actions and a Create button that opens a dialog with
+      the creation form.
     - Inline validation enforces the field limits; server-side validation mirrors them.
 
 Locations CRUD (per Home)

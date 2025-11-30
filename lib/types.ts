@@ -52,6 +52,20 @@ export type ProcedureInput = {
     procedure: string;
 };
 
+export type Service = {
+    id: string;
+    itemId: string; // parent Item
+    procedureId: string; // one-to-one link to Procedure
+    interval: number; // days between services
+    createdAt: string; // ISO
+    updatedAt: string; // ISO
+};
+
+export type ServiceInput = {
+    procedureId: string;
+    interval: number;
+};
+
 export type ApiResponse<T> =
     | { ok: true; data: T }
     | { ok: false; error: string };
@@ -115,6 +129,21 @@ export function validateProcedureInput(input: Partial<ProcedureInput>): string |
     }
     if (procedure.length > 4000) {
         return 'Procedure must be at most 4000 characters.';
+    }
+    return null;
+}
+
+export function validateServiceInput(input: Partial<ServiceInput>): string | null {
+    const procedureId = input.procedureId ?? '';
+    const interval = input.interval;
+    if (typeof procedureId !== 'string' || procedureId.trim().length === 0) {
+        return 'Procedure is required.';
+    }
+    if (typeof interval !== 'number' || !Number.isFinite(interval) || !Number.isInteger(interval) || interval <= 0) {
+        return 'Interval must be a positive integer number of days.';
+    }
+    if (interval > 36500) {
+        return 'Interval must be at most 36500 days.';
     }
     return null;
 }

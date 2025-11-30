@@ -4,7 +4,7 @@ import {getLocation} from '@/lib/storage/locations';
 import {deleteItem, getItem, updateItem} from '@/lib/storage/items';
 import {type ApiResponse, type Item, validateItemInput} from '@/lib/types';
 
-type Params = { params: { homeId: string; locationId: string; id: string } };
+type Params = { params: { homeId: string; locationId: string; serviceId: string } };
 
 export async function GET(_req: Request, {params}: Params) {
     const home = await getHome(params.homeId);
@@ -17,7 +17,7 @@ export async function GET(_req: Request, {params}: Params) {
         const body: ApiResponse<never> = {ok: false, error: 'Location not found.'};
         return NextResponse.json(body, {status: 404});
     }
-    const item = await getItem(params.locationId, params.id);
+    const item = await getItem(params.locationId, params.serviceId);
     if (!item) {
         const body: ApiResponse<never> = {ok: false, error: 'Item not found.'};
         return NextResponse.json(body, {status: 404});
@@ -44,7 +44,7 @@ export async function PUT(req: Request, {params}: Params) {
             const body: ApiResponse<never> = {ok: false, error};
             return NextResponse.json(body, {status: 400});
         }
-        const updated = await updateItem(params.locationId, params.id, {
+        const updated = await updateItem(params.locationId, params.serviceId, {
             name: json.name,
             description: json.description
         });
@@ -71,11 +71,11 @@ export async function DELETE(_req: Request, {params}: Params) {
         const body: ApiResponse<never> = {ok: false, error: 'Location not found.'};
         return NextResponse.json(body, {status: 404});
     }
-    const ok = await deleteItem(params.locationId, params.id);
+    const ok = await deleteItem(params.locationId, params.serviceId);
     if (!ok) {
         const body: ApiResponse<never> = {ok: false, error: 'Item not found.'};
         return NextResponse.json(body, {status: 404});
     }
-    const body: ApiResponse<{ id: string }> = {ok: true, data: {id: params.id}};
+    const body: ApiResponse<{ id: string }> = {ok: true, data: {id: params.serviceId}};
     return NextResponse.json(body, {status: 200});
 }

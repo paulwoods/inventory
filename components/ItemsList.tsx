@@ -1,7 +1,8 @@
 "use client";
 
-import {useEffect, useState} from 'react';
-import type {Item} from '@/lib/types';
+import {useEffect, useMemo, useState} from 'react';
+import Link from 'next/link';
+import type {Item, Procedure, Service} from '@/lib/types';
 import ItemForm from '@/components/ItemForm';
 
 type Props = {
@@ -16,17 +17,41 @@ export default function ItemsList({homeId, locationId}: Props) {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [creating, setCreating] = useState(false);
+    const [procedures, setProcedures] = useState<Procedure[]>([]);
+    const [servicesByItem, setServicesByItem] = useState<Record<string, Service[]>>({});
 
     async function load() {
         setLoading(true);
         setError(null);
         try {
+            // Load items first
             const res = await fetch(`/api/homes/${homeId}/locations/${locationId}/items`, {cache: 'no-store'});
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed to load');
             const sorted: Item[] = [...(data.data as Item[])]
                 .sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
             setItems(sorted);
+
+            // Load procedures and services for each item in parallel
+            const [procRes, servicesList] = await Promise.all([
+                fetch(`/api/procedure`, {cache: 'no-store'}).then(async (r) => {
+                    const j = await r.json();
+                    if (!r.ok || !j.ok) throw new Error(j?.error || 'Failed to load procedures');
+                    return (j.data as Procedure[]).slice().sort((a, b) => a.name.localeCompare(b.name));
+                }),
+                Promise.all(sorted.map(async (it) => {
+                    const r = await fetch(`/api/homes/${homeId}/locations/${locationId}/items/${it.id}/services`, {cache: 'no-store'});
+                    const j = await r.json();
+                    if (!r.ok || !j.ok) throw new Error(j?.error || 'Failed to load services');
+                    const list = (j.data as Service[]).slice().sort((a, b) => a.updatedAt.localeCompare(b.updatedAt)).reverse();
+                    return [it.id, list] as const;
+                }))
+            ]);
+
+            const map: Record<string, Service[]> = {};
+            for (const [itemId, list] of servicesList) map[itemId] = list;
+            setProcedures(procRes);
+            setServicesByItem(map);
         } catch (e: any) {
             setError(e?.message || 'Failed to load');
         } finally {
@@ -67,12 +92,23 @@ export default function ItemsList({homeId, locationId}: Props) {
                 next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
                 return next;
             });
+            setServicesByItem((prev) => {
+                const copy = {...prev};
+                delete copy[id];
+                return copy;
+            });
         } catch (e) {
             alert('Failed to delete');
         } finally {
             setDeletingId(null);
         }
     }
+
+    const procNameById = useMemo(() => {
+        const map: Record<string, string> = {};
+        for (const p of procedures) map[p.id] = p.name;
+        return map;
+    }, [procedures]);
 
     return (
         <div style={{display: 'grid', gap: '1rem', width: '100%', maxWidth: 800}}>
@@ -125,8 +161,40 @@ export default function ItemsList({homeId, locationId}: Props) {
                                         <div style={{display: 'flex', flexDirection: 'column'}}>
                                             <strong>{i.name}</strong>
                                             {i.description && <span style={{color: '#a9b4c1'}}>{i.description}</span>}
+                                            <div style={{color: '#9ab0c8', marginTop: '0.25rem'}}>
+                                                {(() => {
+                                                    const svcs = servicesByItem[i.id] || [];
+                                                    if (svcs.length === 0) return <span>No services</span>;
+                                                    return (
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            flexDirection: 'column',
+                                                            gap: '0.15rem'
+                                                        }}>
+                                                            <span>Services:</span>
+                                                            {svcs.map((s) => (
+                                                                <span key={s.id} style={{paddingLeft: '0.75rem'}}>
+                                                                    {procNameById[s.procedureId] || 'Unknown'} ({s.interval} days)
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </div>
                                         </div>
                                         <div style={{display: 'flex', gap: '0.5rem'}}>
+                                            <Link
+                                                href={`/homes/${homeId}/locations/${locationId}/items/${i.id}/services`}>
+                                                <button style={{
+                                                    padding: '0.35rem 0.7rem',
+                                                    borderRadius: 6,
+                                                    border: '1px solid #2a3550',
+                                                    background: '#103a20',
+                                                    color: 'white'
+                                                }}>
+                                                    Services
+                                                </button>
+                                            </Link>
                                             <button onClick={() => setEditingId(i.id)} style={{
                                                 padding: '0.35rem 0.7rem',
                                                 borderRadius: 6,

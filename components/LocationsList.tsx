@@ -1,12 +1,15 @@
 "use client";
 
 import {useEffect, useState} from 'react';
-import Link from 'next/link';
-import type {Home} from '@/lib/types';
-import HomeForm from '@/components/HomeForm';
+import type {Location} from '@/lib/types';
+import LocationForm from '@/components/LocationForm';
 
-export default function HomesList() {
-    const [homes, setHomes] = useState<Home[]>([]);
+type Props = {
+    homeId: string;
+};
+
+export default function LocationsList({homeId}: Props) {
+    const [locations, setLocations] = useState<Location[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -16,10 +19,10 @@ export default function HomesList() {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch('/api/homes', {cache: 'no-store'});
+            const res = await fetch(`/api/homes/${homeId}/locations`, {cache: 'no-store'});
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed to load');
-            setHomes(data.data as Home[]);
+            setLocations(data.data as Location[]);
         } catch (e: any) {
             setError(e?.message || 'Failed to load');
         } finally {
@@ -29,25 +32,25 @@ export default function HomesList() {
 
     useEffect(() => {
         load();
-    }, []);
+    }, [homeId]);
 
-    function onCreated(home: Home) {
-        setHomes((prev) => [home, ...prev]);
+    function onCreated(loc: Location) {
+        setLocations((prev) => [loc, ...prev]);
     }
 
-    function onSaved(updated: Home) {
-        setHomes((prev) => prev.map((h) => (h.id === updated.id ? updated : h)));
+    function onSaved(updated: Location) {
+        setLocations((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
         setEditingId(null);
     }
 
     async function onDelete(id: string) {
-        if (!confirm('Delete this home?')) return;
+        if (!confirm('Delete this location?')) return;
         setDeletingId(id);
         try {
-            const res = await fetch(`/api/homes/${id}`, {method: 'DELETE'});
+            const res = await fetch(`/api/homes/${homeId}/locations/${id}`, {method: 'DELETE'});
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed to delete');
-            setHomes((prev) => prev.filter((h) => h.id !== id));
+            setLocations((prev) => prev.filter((l) => l.id !== id));
         } catch (e) {
             alert('Failed to delete');
         } finally {
@@ -58,13 +61,13 @@ export default function HomesList() {
     return (
         <div style={{display: 'grid', gap: '1rem', width: '100%', maxWidth: 800}}>
             <section style={{padding: '1rem', border: '1px solid #2a3550', borderRadius: 8, background: '#0b1230'}}>
-                <h2 style={{marginBottom: '0.5rem'}}>Create Home</h2>
-                <HomeForm mode="create" onSaved={onCreated}/>
+                <h2 style={{marginBottom: '0.5rem'}}>Create Location</h2>
+                <LocationForm homeId={homeId} mode="create" onSaved={onCreated}/>
             </section>
 
             <section style={{padding: '1rem', border: '1px solid #2a3550', borderRadius: 8, background: '#0b1230'}}>
                 <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-                    <h2>Homes</h2>
+                    <h2>Locations</h2>
                     <button onClick={load} disabled={loading} style={{
                         padding: '0.35rem 0.7rem',
                         borderRadius: 6,
@@ -76,15 +79,16 @@ export default function HomesList() {
                 </div>
                 {loading && <div>Loading…</div>}
                 {error && <div style={{color: '#ff8a8a'}}>{error}</div>}
-                {!loading && homes.length === 0 &&
-                  <div style={{color: '#a9b4c1'}}>No homes yet. Create one above.</div>}
+                {!loading && locations.length === 0 &&
+                  <div style={{color: '#a9b4c1'}}>No locations yet. Create one above.</div>}
                 <ul style={{listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '0.75rem'}}>
-                    {homes.map((h) => (
-                        <li key={h.id} style={{border: '1px solid #223055', borderRadius: 8, padding: '0.75rem'}}>
-                            {editingId === h.id ? (
-                                <HomeForm
+                    {locations.map((l) => (
+                        <li key={l.id} style={{border: '1px solid #223055', borderRadius: 8, padding: '0.75rem'}}>
+                            {editingId === l.id ? (
+                                <LocationForm
+                                    homeId={homeId}
                                     mode="edit"
-                                    initial={h}
+                                    initial={l}
                                     onCancel={() => setEditingId(null)}
                                     onSaved={onSaved}
                                 />
@@ -97,21 +101,11 @@ export default function HomesList() {
                                         gap: '0.5rem'
                                     }}>
                                         <div style={{display: 'flex', flexDirection: 'column'}}>
-                                            <Link href={`/homes/${h.id}`}
-                                                  style={{color: 'inherit', textDecoration: 'none'}}>
-                                                <strong>{h.name}</strong>
-                                            </Link>
-                                            {h.description && <span style={{color: '#a9b4c1'}}>{h.description}</span>}
+                                            <strong>{l.name}</strong>
+                                            {l.description && <span style={{color: '#a9b4c1'}}>{l.description}</span>}
                                         </div>
                                         <div style={{display: 'flex', gap: '0.5rem'}}>
-                                            <Link href={`/homes/${h.id}`} style={{
-                                                padding: '0.35rem 0.7rem',
-                                                borderRadius: 6,
-                                                border: '1px solid #2a3550',
-                                                background: '#10203a',
-                                                color: 'white'
-                                            }}>Open</Link>
-                                            <button onClick={() => setEditingId(h.id)} style={{
+                                            <button onClick={() => setEditingId(l.id)} style={{
                                                 padding: '0.35rem 0.7rem',
                                                 borderRadius: 6,
                                                 border: '1px solid #2a3550',
@@ -119,20 +113,20 @@ export default function HomesList() {
                                                 color: 'white'
                                             }}>Edit
                                             </button>
-                                            <button onClick={() => onDelete(h.id)} disabled={deletingId === h.id}
+                                            <button onClick={() => onDelete(l.id)} disabled={deletingId === l.id}
                                                     style={{
                                                         padding: '0.35rem 0.7rem',
                                                         borderRadius: 6,
                                                         border: '1px solid #553333',
-                                                        background: deletingId === h.id ? '#3a1010' : '#4a1414',
+                                                        background: deletingId === l.id ? '#3a1010' : '#4a1414',
                                                         color: 'white'
-                                                    }}>{deletingId === h.id ? 'Deleting…' : 'Delete'}</button>
+                                                    }}>{deletingId === l.id ? 'Deleting…' : 'Delete'}</button>
                                         </div>
                                     </div>
                                     <div style={{
                                         fontSize: 12,
                                         color: '#7f8aa5'
-                                    }}>Updated {new Date(h.updatedAt).toLocaleString()}</div>
+                                    }}>Updated {new Date(l.updatedAt).toLocaleString()}</div>
                                 </div>
                             )}
                         </li>

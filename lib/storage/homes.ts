@@ -2,6 +2,7 @@ import {promises as fs} from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import type {Home, HomeInput} from '@/lib/types';
+import {deleteLocationsByHome} from '@/lib/storage/locations';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const HOMES_FILE = path.join(DATA_DIR, 'homes.json');
@@ -90,5 +91,11 @@ export async function deleteHome(id: string): Promise<boolean> {
     const filtered = homes.filter(h => h.id !== id);
     if (filtered.length === homes.length) return false;
     await writeHomes(filtered);
+    // Cascade delete locations for this home (best-effort)
+    try {
+        await deleteLocationsByHome(id);
+    } catch {
+        // ignore cascade errors
+    }
     return true;
 }

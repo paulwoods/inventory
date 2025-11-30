@@ -17,3 +17,24 @@ Key Files
 - next.config.ts — Next.js configuration
 - tsconfig.json — TypeScript configuration
 - eslint.config.mjs — ESLint flat config for Next.js
+
+Homes CRUD
+
+- Entity: Home
+    - name: required, max 100 chars
+    - description: optional, max 1000 chars
+
+- Storage: simple JSON file at data/homes.json (created automatically)
+
+- API Endpoints
+    - GET /api/homes — list all homes
+    - POST /api/homes — create
+        - body: { "name": string, "description"?: string }
+    - GET /api/homes/:id — fetch one
+    - PUT /api/homes/:id — update
+        - body: { "name": string, "description"?: string }
+    - DELETE /api/homes/:id — delete
+
+- UI
+    - The home page shows a form to create a Home and a list of existing Homes with Edit/Delete actions.
+    - Inline validation enforces the field limits; server-side validation mirrors them.

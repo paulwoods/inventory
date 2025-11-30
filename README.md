@@ -62,3 +62,26 @@ Locations CRUD (per Home)
     - From the Homes list, click a Home name or the Open button to go to /homes/:homeId.
     - The Home page shows a Locations manager to create, edit, delete, and refresh Locations belonging to that Home.
     - Deleting a Home cascades and removes its Locations from storage.
+
+Items CRUD (per Location)
+
+- Entity: Item
+    - name: required, max 100 chars
+    - description: optional, max 1000 chars
+    - belongs to a Location (via `locationId`)
+
+- Storage: simple JSON file at data/items.json (auto-created)
+
+- API Endpoints (nested under a Home and Location)
+    - GET /api/homes/:homeId/locations/:locationId/items — list all items for a Location
+    - POST /api/homes/:homeId/locations/:locationId/items — create
+        - body: { "name": string, "description"?: string }
+    - GET /api/homes/:homeId/locations/:locationId/items/:id — fetch one
+    - PUT /api/homes/:homeId/locations/:locationId/items/:id — update
+        - body: { "name": string, "description"?: string }
+    - DELETE /api/homes/:homeId/locations/:locationId/items/:id — delete
+
+- UI
+    - From a Home’s Locations page, click a Location name or Open to go to /homes/:homeId/locations/:locationId.
+    - The Location page shows an Items manager to create, edit, delete, and refresh Items belonging to that Location.
+    - Deleting a Location cascades and removes its Items from storage.

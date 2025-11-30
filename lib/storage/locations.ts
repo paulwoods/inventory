@@ -2,6 +2,7 @@ import {promises as fs} from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import type {Location, LocationInput} from '@/lib/types';
+import {deleteItemsByLocation} from '@/lib/storage/items';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const LOCATIONS_FILE = path.join(DATA_DIR, 'locations.json');
@@ -96,13 +97,22 @@ export async function deleteLocation(homeId: string, id: string): Promise<boolea
     const filtered = all.filter(l => !(l.id === id && l.homeId === homeId));
     if (filtered.length === all.length) return false;
     await writeLocations(filtered);
+    // Cascade delete items for this location (best-effort)
+    try {
+        await deleteItemsByLocation(id);
+    } catch {
+        // ignore cascade errors
+    }
     return true;
 }
 
 export async function deleteLocationsByHome(homeId: string): Promise<void> {
     const all = await readLocations();
+    const removed = all.filter(l => l.homeId === homeId);
     const filtered = all.filter(l => l.homeId !== homeId);
     if (filtered.length !== all.length) {
         await writeLocations(filtered);
+        // Cascade delete items for removed locations
+        await Promise.allSettled(removed.map(l => deleteItemsByLocation(l.id)));
     }
 }

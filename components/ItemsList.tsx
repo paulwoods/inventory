@@ -1,16 +1,16 @@
 "use client";
 
 import {useEffect, useState} from 'react';
-import type {Location} from '@/lib/types';
-import LocationForm from '@/components/LocationForm';
-import Link from 'next/link';
+import type {Item} from '@/lib/types';
+import ItemForm from '@/components/ItemForm';
 
 type Props = {
     homeId: string;
+    locationId: string;
 };
 
-export default function LocationsList({homeId}: Props) {
-    const [locations, setLocations] = useState<Location[]>([]);
+export default function ItemsList({homeId, locationId}: Props) {
+    const [items, setItems] = useState<Item[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -21,12 +21,12 @@ export default function LocationsList({homeId}: Props) {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch(`/api/homes/${homeId}/locations`, {cache: 'no-store'});
+            const res = await fetch(`/api/homes/${homeId}/locations/${locationId}/items`, {cache: 'no-store'});
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed to load');
-            const sorted: Location[] = [...(data.data as Location[])]
+            const sorted: Item[] = [...(data.data as Item[])]
                 .sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
-            setLocations(sorted);
+            setItems(sorted);
         } catch (e: any) {
             setError(e?.message || 'Failed to load');
         } finally {
@@ -36,19 +36,19 @@ export default function LocationsList({homeId}: Props) {
 
     useEffect(() => {
         load();
-    }, [homeId]);
+    }, [homeId, locationId]);
 
-    function onCreated(loc: Location) {
-        setLocations((prev) => {
-            const next = [loc, ...prev];
+    function onCreated(item: Item) {
+        setItems((prev) => {
+            const next = [item, ...prev];
             next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
             return next;
         });
     }
 
-    function onSaved(updated: Location) {
-        setLocations((prev) => {
-            const next = prev.map((l) => (l.id === updated.id ? updated : l));
+    function onSaved(updated: Item) {
+        setItems((prev) => {
+            const next = prev.map((i) => (i.id === updated.id ? updated : i));
             next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
             return next;
         });
@@ -56,14 +56,14 @@ export default function LocationsList({homeId}: Props) {
     }
 
     async function onDelete(id: string) {
-        if (!confirm('Delete this location?')) return;
+        if (!confirm('Delete this item?')) return;
         setDeletingId(id);
         try {
-            const res = await fetch(`/api/homes/${homeId}/locations/${id}`, {method: 'DELETE'});
+            const res = await fetch(`/api/homes/${homeId}/locations/${locationId}/items/${id}`, {method: 'DELETE'});
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed to delete');
-            setLocations((prev) => {
-                const next = prev.filter((l) => l.id !== id);
+            setItems((prev) => {
+                const next = prev.filter((i) => i.id !== id);
                 next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
                 return next;
             });
@@ -78,7 +78,7 @@ export default function LocationsList({homeId}: Props) {
         <div style={{display: 'grid', gap: '1rem', width: '100%', maxWidth: 800}}>
             <section style={{padding: '1rem', border: '1px solid #2a3550', borderRadius: 8, background: '#0b1230'}}>
                 <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-                    <h2>Locations</h2>
+                    <h2>Items</h2>
                     <div style={{display: 'flex', gap: '0.5rem'}}>
                         <button onClick={() => setCreating(true)} style={{
                             padding: '0.35rem 0.7rem',
@@ -100,16 +100,17 @@ export default function LocationsList({homeId}: Props) {
                 </div>
                 {loading && <div>Loading…</div>}
                 {error && <div style={{color: '#ff8a8a'}}>{error}</div>}
-                {!loading && locations.length === 0 &&
-                  <div style={{color: '#a9b4c1'}}>No locations yet. Click Create to add one.</div>}
+                {!loading && items.length === 0 &&
+                  <div style={{color: '#a9b4c1'}}>No items yet. Click Create to add one.</div>}
                 <ul style={{listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '0.75rem'}}>
-                    {locations.map((l) => (
-                        <li key={l.id} style={{border: '1px solid #223055', borderRadius: 8, padding: '0.75rem'}}>
-                            {editingId === l.id ? (
-                                <LocationForm
+                    {items.map((i) => (
+                        <li key={i.id} style={{border: '1px solid #223055', borderRadius: 8, padding: '0.75rem'}}>
+                            {editingId === i.id ? (
+                                <ItemForm
                                     homeId={homeId}
+                                    locationId={locationId}
                                     mode="edit"
-                                    initial={l}
+                                    initial={i}
                                     onCancel={() => setEditingId(null)}
                                     onSaved={onSaved}
                                 />
@@ -122,21 +123,11 @@ export default function LocationsList({homeId}: Props) {
                                         gap: '0.5rem'
                                     }}>
                                         <div style={{display: 'flex', flexDirection: 'column'}}>
-                                            <Link href={`/homes/${homeId}/locations/${l.id}`}
-                                                  style={{color: 'inherit', textDecoration: 'none'}}>
-                                                <strong>{l.name}</strong>
-                                            </Link>
-                                            {l.description && <span style={{color: '#a9b4c1'}}>{l.description}</span>}
+                                            <strong>{i.name}</strong>
+                                            {i.description && <span style={{color: '#a9b4c1'}}>{i.description}</span>}
                                         </div>
                                         <div style={{display: 'flex', gap: '0.5rem'}}>
-                                            <Link href={`/homes/${homeId}/locations/${l.id}`} style={{
-                                                padding: '0.35rem 0.7rem',
-                                                borderRadius: 6,
-                                                border: '1px solid #2a3550',
-                                                background: '#10203a',
-                                                color: 'white'
-                                            }}>Open</Link>
-                                            <button onClick={() => setEditingId(l.id)} style={{
+                                            <button onClick={() => setEditingId(i.id)} style={{
                                                 padding: '0.35rem 0.7rem',
                                                 borderRadius: 6,
                                                 border: '1px solid #2a3550',
@@ -144,20 +135,20 @@ export default function LocationsList({homeId}: Props) {
                                                 color: 'white'
                                             }}>Edit
                                             </button>
-                                            <button onClick={() => onDelete(l.id)} disabled={deletingId === l.id}
+                                            <button onClick={() => onDelete(i.id)} disabled={deletingId === i.id}
                                                     style={{
                                                         padding: '0.35rem 0.7rem',
                                                         borderRadius: 6,
                                                         border: '1px solid #553333',
-                                                        background: deletingId === l.id ? '#3a1010' : '#4a1414',
+                                                        background: deletingId === i.id ? '#3a1010' : '#4a1414',
                                                         color: 'white'
-                                                    }}>{deletingId === l.id ? 'Deleting…' : 'Delete'}</button>
+                                                    }}>{deletingId === i.id ? 'Deleting…' : 'Delete'}</button>
                                         </div>
                                     </div>
                                     <div style={{
                                         fontSize: 12,
                                         color: '#7f8aa5'
-                                    }}>Updated {new Date(l.updatedAt).toLocaleString()}</div>
+                                    }}>Updated {new Date(i.updatedAt).toLocaleString()}</div>
                                 </div>
                             )}
                         </li>
@@ -166,7 +157,7 @@ export default function LocationsList({homeId}: Props) {
             </section>
 
             {creating && (
-                <div role="dialog" aria-modal="true" aria-label="Create Location"
+                <div role="dialog" aria-modal="true" aria-label="Create Item"
                      style={{
                          position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
                          background: 'rgba(0,0,0,0.5)', padding: '1rem', zIndex: 1000
@@ -186,18 +177,19 @@ export default function LocationsList({homeId}: Props) {
                             alignItems: 'center',
                             marginBottom: '0.5rem'
                         }}>
-                            <h3 style={{margin: 0}}>Create Location</h3>
+                            <h3 style={{margin: 0}}>Create Item</h3>
                             <button onClick={() => setCreating(false)} aria-label="Close" style={{
                                 padding: '0.25rem 0.5rem', borderRadius: 6, border: '1px solid #2a3550',
                                 background: 'transparent', color: 'white'
                             }}>✕
                             </button>
                         </div>
-                        <LocationForm
+                        <ItemForm
                             homeId={homeId}
+                            locationId={locationId}
                             mode="create"
-                            onSaved={(loc) => {
-                                onCreated(loc);
+                            onSaved={(item) => {
+                                onCreated(item);
                                 setCreating(false);
                             }}
                             onCancel={() => setCreating(false)}

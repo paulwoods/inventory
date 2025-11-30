@@ -31,3 +31,12 @@ code {
 h1, h2, h3 {
     margin: 0.2rem 0;
 }
+
+/* Make action buttons show pointer on hover; disabled shows not-allowed */
+button:hover {
+    cursor: pointer;
+}
+
+button:disabled {
+    cursor: not-allowed;
+}

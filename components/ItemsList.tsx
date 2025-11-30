@@ -2,7 +2,7 @@
 
 import {useEffect, useMemo, useState} from 'react';
 import Link from 'next/link';
-import type {Item, Procedure, Service} from '@/lib/types';
+import type {Equipment, Item, Procedure, Service} from '@/lib/types';
 import ItemForm from '@/components/ItemForm';
 
 type Props = {
@@ -19,6 +19,7 @@ export default function ItemsList({homeId, locationId}: Props) {
     const [creating, setCreating] = useState(false);
     const [procedures, setProcedures] = useState<Procedure[]>([]);
     const [servicesByItem, setServicesByItem] = useState<Record<string, Service[]>>({});
+    const [equipment, setEquipment] = useState<Equipment[]>([]);
 
     async function load() {
         setLoading(true);
@@ -32,12 +33,17 @@ export default function ItemsList({homeId, locationId}: Props) {
                 .sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
             setItems(sorted);
 
-            // Load procedures and services for each item in parallel
-            const [procRes, servicesList] = await Promise.all([
+            // Load procedures, equipment, and services for each item in parallel
+            const [procRes, eqRes, servicesList] = await Promise.all([
                 fetch(`/api/procedure`, {cache: 'no-store'}).then(async (r) => {
                     const j = await r.json();
                     if (!r.ok || !j.ok) throw new Error(j?.error || 'Failed to load procedures');
                     return (j.data as Procedure[]).slice().sort((a, b) => a.name.localeCompare(b.name));
+                }),
+                fetch(`/api/equipment`, {cache: 'no-store'}).then(async (r) => {
+                    const j = await r.json();
+                    if (!r.ok || !j.ok) throw new Error(j?.error || 'Failed to load equipment');
+                    return (j.data as Equipment[]).slice().sort((a, b) => a.name.localeCompare(b.name));
                 }),
                 Promise.all(sorted.map(async (it) => {
                     const r = await fetch(`/api/homes/${homeId}/locations/${locationId}/items/${it.id}/services`, {cache: 'no-store'});
@@ -51,6 +57,7 @@ export default function ItemsList({homeId, locationId}: Props) {
             const map: Record<string, Service[]> = {};
             for (const [itemId, list] of servicesList) map[itemId] = list;
             setProcedures(procRes);
+            setEquipment(eqRes);
             setServicesByItem(map);
         } catch (e: any) {
             setError(e?.message || 'Failed to load');
@@ -110,6 +117,12 @@ export default function ItemsList({homeId, locationId}: Props) {
         return map;
     }, [procedures]);
 
+    const equipmentNameById = useMemo(() => {
+        const map: Record<string, string> = {};
+        for (const e of equipment) map[e.id] = e.name;
+        return map;
+    }, [equipment]);
+
     return (
         <div style={{display: 'grid', gap: '1rem', width: '100%', maxWidth: 800}}>
             <section style={{padding: '1rem', border: '1px solid #2a3550', borderRadius: 8, background: '#0b1230'}}>
@@ -159,7 +172,15 @@ export default function ItemsList({homeId, locationId}: Props) {
                                         gap: '0.5rem'
                                     }}>
                                         <div style={{display: 'flex', flexDirection: 'column'}}>
-                                            <strong>{i.name}</strong>
+                                            <strong>
+                                                {i.name}
+                                                {i.equipmentId && (
+                                                    <span style={{
+                                                        fontWeight: 'normal',
+                                                        color: '#9ab0c8'
+                                                    }}> ({equipmentNameById[i.equipmentId] || 'Unknown equipment'})</span>
+                                                )}
+                                            </strong>
                                             {i.description && <span style={{color: '#a9b4c1'}}>{i.description}</span>}
                                             <div style={{color: '#9ab0c8', marginTop: '0.25rem'}}>
                                                 {(() => {

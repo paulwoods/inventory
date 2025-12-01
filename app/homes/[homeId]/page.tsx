@@ -4,6 +4,7 @@ import LocationsList from '@/components/LocationsList';
 import Link from 'next/link';
 import {getHome} from '@/lib/storage/homes';
 import TitleBar from '@/components/TitleBar';
+import DashboardList from '@/components/DashboardList';
 
 type Params = { params: { homeId: string } };
 
@@ -27,7 +28,9 @@ export default async function HomeLocationsPage({params}: Params) {
             <h1 style={{marginTop: 0}}>Home: {home.name}</h1>
             {home.description && <p style={{color: 'var(--muted)'}}>{home.description}</p>}
 
+            <DashboardList homeId={home.id}/>
             <LocationsList homeId={home.id}/>
+
         </main>
     );
 }

@@ -3,6 +3,7 @@ import {listItemsByLocation} from '@/lib/storage/items';
 import {listServicesByItem} from '@/lib/storage/services';
 import {listWorksByService} from '@/lib/storage/work';
 import {getProcedure} from '@/lib/storage/procedures';
+import Link from 'next/link';
 
 type Props = {
     homeId: string;
@@ -60,7 +61,11 @@ export default async function DashboardList({homeId}: Props) {
     const items = (await Promise.all(
         locations.map(async (loc) => {
             const list = await listItemsByLocation(loc.id);
-            return list.map((it) => ({...it, locationName: loc.name}));
+            return list.map((it) => ({
+                ...it,
+                locationId: loc.id,
+                locationName: loc.name,
+            }));
         })
     )).flat();
 
@@ -68,7 +73,13 @@ export default async function DashboardList({homeId}: Props) {
     const servicesByItem = await Promise.all(
         items.map(async (it) => {
             const services = await listServicesByItem(it.id);
-            return services.map((s) => ({service: s, itemId: it.id, itemName: it.name, locationName: it.locationName}));
+            return services.map((s) => ({
+                service: s,
+                itemId: it.id,
+                itemName: it.name,
+                locationId: it.locationId,
+                locationName: it.locationName,
+            }));
         })
     );
     const serviceRows = servicesByItem.flat();
@@ -100,7 +111,9 @@ export default async function DashboardList({homeId}: Props) {
             const last = works[0]?.performedAt ?? null;
             const dueIn = daysUntilDue(last, row.service.createdAt, row.service.interval);
             return {
+                itemId: row.itemId,
                 itemName: row.itemName,
+                locationId: row.locationId,
                 locationName: row.locationName,
                 serviceName: proc?.name ?? 'Service',
                 lastDone: last,
@@ -160,8 +173,28 @@ export default async function DashboardList({homeId}: Props) {
                             whiteSpace: 'nowrap',
                             width: "25%",
                             textAlign: "right",
-                            color: '#a9b4c1'
-                        }}>{formatDate(r.lastDone)}</div>
+                            color: '#a9b4c1',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'flex-end',
+                            gap: '0.5rem'
+                        }}>
+                            <span>{formatDate(r.lastDone)}</span>
+                            <Link
+                                href={`/homes/${homeId}/locations/${r.locationId}/items/${r.itemId}/view`}
+                                style={{
+                                    padding: '0.25rem 0.5rem',
+                                    border: '1px solid #2a3550',
+                                    borderRadius: 6,
+                                    background: '#162046',
+                                    color: '#c7d4ea',
+                                    textDecoration: 'none',
+                                    fontSize: 13
+                                }}
+                            >
+                                View
+                            </Link>
+                        </div>
                     </li>
                 ))}
             </ul>

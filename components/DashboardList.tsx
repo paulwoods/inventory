@@ -19,6 +19,23 @@ function formatDate(iso?: string | null): string {
     }
 }
 
+function daysUntilDue(lastDoneISO: string | null, createdAtISO: string, intervalDays: number): number | null {
+    if (!Number.isFinite(intervalDays) || intervalDays <= 0) return null;
+    const baseISO = lastDoneISO ?? createdAtISO;
+    const base = new Date(baseISO);
+    if (Number.isNaN(base.getTime())) return null;
+    const nextDue = new Date(base.getTime() + intervalDays * 24 * 60 * 60 * 1000);
+    const now = new Date();
+    const diffMs = nextDue.getTime() - now.getTime();
+    const days = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+    return Math.max(0, days);
+}
+
+function formatDueIn(days: number | null): string {
+    if (days === null) return '—';
+    return `${days}d`;
+}
+
 export default async function DashboardList({homeId}: Props) {
     // Load locations for the home
     const locations = await listLocationsByHome(homeId);
@@ -80,11 +97,13 @@ export default async function DashboardList({homeId}: Props) {
                 getProcedure(row.service.procedureId),
             ]);
             const last = works[0]?.performedAt ?? null;
+            const dueIn = daysUntilDue(last, row.service.createdAt, row.service.interval);
             return {
                 itemName: row.itemName,
                 locationName: row.locationName,
                 serviceName: proc?.name ?? 'Service',
                 lastDone: last,
+                dueIn,
             };
         })
     );
@@ -108,7 +127,9 @@ export default async function DashboardList({homeId}: Props) {
             maxWidth: 1000
         }}>
             <h2 style={{marginTop: 0}}>Dashboard</h2>
-            <div style={{fontSize: 12, color: '#93a0b8', marginBottom: '0.5rem'}}>Item → Service → Last complete</div>
+            <div style={{fontSize: 12, color: '#93a0b8', marginBottom: '0.5rem'}}>Item → Service → Last complete → Due
+                in
+            </div>
             <ul style={{listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '0.5rem'}}>
                 {enriched.map((r, idx) => (
                     <li key={idx} style={{
@@ -120,17 +141,23 @@ export default async function DashboardList({homeId}: Props) {
                         justifyContent: 'space-between',
                         gap: '1rem'
                     }}>
-                        <div style={{display: 'grid', width: "33%"}}>
+                        <div style={{display: 'grid', width: "40%"}}>
                             <span style={{fontWeight: 600}}>{r.itemName}</span>
                             <span style={{fontSize: 12, color: '#93a0b8'}}>{r.locationName}</span>
                         </div>
-                        <div style={{color: '#d7e2f2', width: "33%", textAlign: 'center'}}>{r.serviceName}</div>
+                        <div style={{color: '#d7e2f2', width: "20%", textAlign: 'center'}}>{r.serviceName}</div>
                         <div style={{
                             whiteSpace: 'nowrap',
-                            width: "33%",
+                            width: "20%",
                             textAlign: "right",
                             color: '#a9b4c1'
                         }}>{formatDate(r.lastDone)}</div>
+                        <div style={{
+                            whiteSpace: 'nowrap',
+                            width: "20%",
+                            textAlign: "right",
+                            color: '#c7d4ea'
+                        }}>{formatDueIn(r.dueIn)}</div>
                     </li>
                 ))}
             </ul>

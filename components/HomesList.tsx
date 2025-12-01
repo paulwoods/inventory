@@ -129,7 +129,8 @@ export default function HomesList() {
                                                 borderRadius: 6,
                                                 border: '1px solid #2a3550',
                                                 background: '#10203a',
-                                                color: 'white'
+                                                color: 'white',
+                                                textDecoration: 'none'
                                             }}>Open</Link>
                                             <button onClick={() => setEditingId(h.id)} style={{
                                                 padding: '0.35rem 0.7rem',

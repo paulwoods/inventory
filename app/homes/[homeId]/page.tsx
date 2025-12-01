@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {getHome} from '@/lib/storage/homes';
 import TitleBar from '@/components/TitleBar';
 import DashboardList from '@/components/DashboardList';
+import HomeTabs from '@/components/HomeTabs';
 
 type Params = { params: { homeId: string } };
 
@@ -28,8 +29,15 @@ export default async function HomeLocationsPage({params}: Params) {
             <h1 style={{marginTop: 0}}>Home: {home.name}</h1>
             {home.description && <p style={{color: 'var(--muted)'}}>{home.description}</p>}
 
-            <DashboardList homeId={home.id}/>
-            <LocationsList homeId={home.id}/>
+            <HomeTabs/>
+
+            {/* Panels controlled by HomeTabs (client) via element IDs */}
+            <div id="dashboard-panel" style={{display: 'block', width: '100%'}}>
+                <DashboardList homeId={home.id}/>
+            </div>
+            <div id="locations-panel" style={{display: 'none', width: '100%'}}>
+                <LocationsList homeId={home.id}/>
+            </div>
 
         </main>
     );

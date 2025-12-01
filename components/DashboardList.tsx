@@ -28,7 +28,8 @@ function daysUntilDue(lastDoneISO: string | null, createdAtISO: string, interval
     const now = new Date();
     const diffMs = nextDue.getTime() - now.getTime();
     const days = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
-    return Math.max(0, days);
+    // return Math.max(0, days);
+    return days;
 }
 
 function formatDueIn(days: number | null): string {
@@ -141,23 +142,23 @@ export default async function DashboardList({homeId}: Props) {
                         justifyContent: 'space-between',
                         gap: '1rem'
                     }}>
-                        <div style={{display: 'grid', width: "40%"}}>
+                        <div style={{
+                            whiteSpace: 'nowrap',
+                            width: "20%",
+                            textAlign: "left",
+                            color: '#c7d4ea'
+                        }}>{formatDueIn(r.dueIn)}</div>
+                        <div style={{display: 'grid', width: "20%"}}>
                             <span style={{fontWeight: 600}}>{r.itemName}</span>
                             <span style={{fontSize: 12, color: '#93a0b8'}}>{r.locationName}</span>
                         </div>
-                        <div style={{color: '#d7e2f2', width: "20%", textAlign: 'center'}}>{r.serviceName}</div>
+                        <div style={{color: '#d7e2f2', width: "35%", textAlign: 'left'}}>{r.serviceName}</div>
                         <div style={{
                             whiteSpace: 'nowrap',
-                            width: "20%",
+                            width: "25%",
                             textAlign: "right",
                             color: '#a9b4c1'
                         }}>{formatDate(r.lastDone)}</div>
-                        <div style={{
-                            whiteSpace: 'nowrap',
-                            width: "20%",
-                            textAlign: "right",
-                            color: '#c7d4ea'
-                        }}>{formatDueIn(r.dueIn)}</div>
                     </li>
                 ))}
             </ul>

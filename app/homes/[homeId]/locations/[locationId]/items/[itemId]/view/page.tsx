@@ -127,7 +127,7 @@ export default async function ItemViewPage({params}: Params) {
                                                 <CompleteServiceButton serviceId={s.id}/>
                                             </div>
                                             <span style={{fontSize: 12, color: '#7f8aa5'}}>
-                                                Last done: {lastDoneByService[s.id] ? new Date(lastDoneByService[s.id] as string).toLocaleString() : 'never'}{daysSinceByService[s.id] !== null ? ` (${daysSinceByService[s.id]} days)` : ''}
+                                                Last done: {lastDoneByService[s.id] ? new Date(lastDoneByService[s.id] as string).toLocaleString() : 'never'}{daysSinceByService[s.id] !== null ? ` (${daysSinceByService[s.id]} days ago)` : ''}
                                             </span>
                                             {worksByService[s.id] && worksByService[s.id].length > 0 && (
                                                 <div style={{marginTop: '0.5rem'}}>

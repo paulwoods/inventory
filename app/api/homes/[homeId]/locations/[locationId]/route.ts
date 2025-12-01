@@ -3,6 +3,8 @@ import {getHome} from '@/lib/storage/homes';
 import {deleteLocation, getLocation, updateLocation} from '@/lib/storage/locations';
 import {type ApiResponse, type Location, validateLocationInput} from '@/lib/types';
 
+export const runtime = 'nodejs';
+
 type Params = { params: { homeId: string; locationId: string } };
 
 export async function GET(_req: Request, {params}: Params) {

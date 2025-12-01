@@ -2,6 +2,8 @@ import {NextResponse} from 'next/server';
 import {deleteHome, getHome, updateHome} from '@/lib/storage/homes';
 import {type ApiResponse, type Home, validateHomeInput} from '@/lib/types';
 
+export const runtime = 'nodejs';
+
 type Params = { params: { homeId: string } };
 
 export async function GET(_req: Request, {params}: Params) {

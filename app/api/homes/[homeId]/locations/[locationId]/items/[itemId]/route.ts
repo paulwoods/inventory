@@ -5,6 +5,8 @@ import {deleteItem, getItem, updateItem} from '@/lib/storage/items';
 import {getEquipment} from '@/lib/storage/equipment';
 import {type ApiResponse, type Item, validateItemInput} from '@/lib/types';
 
+export const runtime = 'nodejs';
+
 type Params = { params: { homeId: string; locationId: string; itemId: string } };
 
 export async function GET(_req: Request, {params}: Params) {

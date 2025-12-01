@@ -2,6 +2,8 @@ import {NextResponse} from 'next/server';
 import {createHome, readHomes} from '@/lib/storage/homes';
 import {type ApiResponse, type Home, validateHomeInput} from '@/lib/types';
 
+export const runtime = 'nodejs';
+
 export async function GET() {
     const homes = await readHomes();
     const sorted = [...homes].sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));

@@ -5,6 +5,8 @@ import {getLocation} from '@/lib/storage/locations';
 import ItemsList from '@/components/ItemsList';
 import TitleBar from '@/components/TitleBar';
 
+export const dynamic = 'force-dynamic';
+
 type Params = { params: { homeId: string; locationId: string } };
 
 export default async function LocationItemsPage({params}: Params) {

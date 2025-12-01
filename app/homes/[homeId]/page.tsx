@@ -7,6 +7,8 @@ import TitleBar from '@/components/TitleBar';
 import DashboardList from '@/components/DashboardList';
 import HomeTabs from '@/components/HomeTabs';
 
+export const dynamic = 'force-dynamic';
+
 type Params = { params: { homeId: string } };
 
 export default async function HomeLocationsPage({params}: Params) {

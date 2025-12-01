@@ -120,12 +120,17 @@ export default async function DashboardList({homeId}: Props) {
                         justifyContent: 'space-between',
                         gap: '1rem'
                     }}>
-                        <div style={{display: 'grid'}}>
+                        <div style={{display: 'grid', width: "33%"}}>
                             <span style={{fontWeight: 600}}>{r.itemName}</span>
                             <span style={{fontSize: 12, color: '#93a0b8'}}>{r.locationName}</span>
                         </div>
-                        <div style={{flex: 1, color: '#d7e2f2'}}>{r.serviceName}</div>
-                        <div style={{whiteSpace: 'nowrap', color: '#a9b4c1'}}>{formatDate(r.lastDone)}</div>
+                        <div style={{color: '#d7e2f2', width: "33%", textAlign: 'center'}}>{r.serviceName}</div>
+                        <div style={{
+                            whiteSpace: 'nowrap',
+                            width: "33%",
+                            textAlign: "right",
+                            color: '#a9b4c1'
+                        }}>{formatDate(r.lastDone)}</div>
                     </li>
                 ))}
             </ul>

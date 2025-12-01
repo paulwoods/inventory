@@ -109,13 +109,16 @@ export default async function DashboardList({homeId}: Props) {
         })
     );
 
-    // Sort by last done desc, then item name
+    // Sort by dueIn ascending (overdue/soonest first), nulls last; tie-break by item name, then last done desc
     enriched.sort((a, b) => {
+        const av = a.dueIn ?? Number.POSITIVE_INFINITY;
+        const bv = b.dueIn ?? Number.POSITIVE_INFINITY;
+        if (av !== bv) return av - bv;
+        const nameCmp = a.itemName.localeCompare(b.itemName, undefined, {sensitivity: 'base'});
+        if (nameCmp !== 0) return nameCmp;
         const ad = a.lastDone ?? '';
         const bd = b.lastDone ?? '';
-        const cmp = bd.localeCompare(ad);
-        if (cmp !== 0) return cmp;
-        return a.itemName.localeCompare(b.itemName, undefined, {sensitivity: 'base'});
+        return bd.localeCompare(ad);
     });
 
     return (

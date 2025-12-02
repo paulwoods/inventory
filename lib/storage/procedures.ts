@@ -2,6 +2,7 @@ import {promises as fs} from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import type {Procedure, ProcedureInput} from '@/lib/types';
+import {byNameCI, sorted} from '@/lib/utils/sort';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const PROCEDURE_FILE = path.join(DATA_DIR, 'procedures.json');
@@ -50,7 +51,7 @@ function newId() {
 
 export async function listProcedures(): Promise<Procedure[]> {
     const all = await readProcedures();
-    return [...all].sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
+    return sorted(all, byNameCI);
 }
 
 export async function createProcedure(input: ProcedureInput): Promise<Procedure> {

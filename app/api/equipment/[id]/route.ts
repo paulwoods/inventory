@@ -29,7 +29,7 @@ export async function PUT(req: Request, {params}: Params) {
 }
 
 export async function DELETE(_req: Request, {params}: Params) {
-    const ok = await deleteEquipment(params.id);
-    if (!ok) return fail('Equipment not found.', 404);
+    const deleted = await deleteEquipment(params.id);
+    if (!deleted) return fail('Equipment not found.', 404);
     return ok<{ id: string }>({id: params.id}, 200);
 }

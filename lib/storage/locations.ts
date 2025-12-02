@@ -3,6 +3,7 @@ import path from 'path';
 import crypto from 'crypto';
 import type {Location, LocationInput} from '@/lib/types';
 import {deleteItemsByLocation} from '@/lib/storage/items';
+import {byNameCI, sorted} from '@/lib/utils/sort';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const LOCATIONS_FILE = path.join(DATA_DIR, 'locations.json');
@@ -51,9 +52,10 @@ function newId() {
 
 export async function listLocationsByHome(homeId: string): Promise<Location[]> {
     const all = await readLocations();
-    return all
-        .filter(l => l.homeId === homeId)
-        .sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
+    return sorted(
+        all.filter(l => l.homeId === homeId),
+        byNameCI
+    );
 }
 
 export async function createLocation(homeId: string, input: LocationInput): Promise<Location> {

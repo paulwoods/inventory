@@ -2,6 +2,7 @@ import {promises as fs} from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import type {Service, ServiceInput} from '@/lib/types';
+import {byUpdatedAt, sortedDesc} from '@/lib/utils/sort';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const SERVICES_FILE = path.join(DATA_DIR, 'services.json');
@@ -50,10 +51,10 @@ function newId() {
 
 export async function listServicesByItem(itemId: string): Promise<Service[]> {
     const all = await readServices();
-    return all
-        .filter(s => s.itemId === itemId)
-        .sort((a, b) => a.updatedAt.localeCompare(b.updatedAt))
-        .reverse();
+    return sortedDesc(
+        all.filter(s => s.itemId === itemId),
+        byUpdatedAt
+    );
 }
 
 export async function createService(itemId: string, input: ServiceInput): Promise<Service> {

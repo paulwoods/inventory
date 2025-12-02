@@ -2,6 +2,7 @@ import {promises as fs} from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import type {Item, ItemInput} from '@/lib/types';
+import {byNameCI, sorted} from '@/lib/utils/sort';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const ITEMS_FILE = path.join(DATA_DIR, 'items.json');
@@ -50,9 +51,10 @@ function newId() {
 
 export async function listItemsByLocation(locationId: string): Promise<Item[]> {
     const all = await readItems();
-    return all
-        .filter(i => i.locationId === locationId)
-        .sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
+    return sorted(
+        all.filter(i => i.locationId === locationId),
+        byNameCI
+    );
 }
 
 export async function createItem(locationId: string, input: ItemInput): Promise<Item> {

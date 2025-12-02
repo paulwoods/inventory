@@ -2,6 +2,7 @@ import {promises as fs} from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import type {Equipment, EquipmentInput} from '@/lib/types';
+import {byNameCI, sorted} from '@/lib/utils/sort';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const EQUIPMENT_FILE = path.join(DATA_DIR, 'equipment.json');
@@ -50,7 +51,7 @@ function newId() {
 
 export async function listEquipment(): Promise<Equipment[]> {
     const all = await readEquipment();
-    return [...all].sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
+    return sorted(all, byNameCI);
 }
 
 export async function createEquipment(input: EquipmentInput): Promise<Equipment> {

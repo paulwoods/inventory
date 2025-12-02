@@ -2,6 +2,7 @@
 
 import {useEffect, useMemo, useState} from 'react';
 import type {Equipment, EquipmentInput, Procedure} from '@/lib/types';
+import {byName, sorted} from '@/lib/utils/sort';
 
 type Props = {
     initial?: Partial<Equipment>;
@@ -24,7 +25,7 @@ export default function EquipmentForm({initial, mode, onCancel, onSaved}: Props)
             const res = await fetch('/api/procedure', {cache: 'no-store'});
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed to load procedures');
-            const list: Procedure[] = (data.data as Procedure[]).slice().sort((a, b) => a.name.localeCompare(b.name));
+            const list: Procedure[] = sorted(data.data as Procedure[], byName);
             setProcedures(list);
         } catch (e: any) {
             setError(e?.message || 'Failed to load procedures');

@@ -2,6 +2,7 @@
 
 import {useEffect, useMemo, useState} from 'react';
 import type {Equipment, Procedure} from '@/lib/types';
+import {byName, sorted} from '@/lib/utils/sort';
 import EquipmentForm from '@/components/EquipmentForm';
 
 export default function EquipmentList() {
@@ -25,8 +26,8 @@ export default function EquipmentList() {
             const procJson = await procRes.json();
             if (!eqRes.ok || !eqJson.ok) throw new Error(eqJson?.error || 'Failed to load equipment');
             if (!procRes.ok || !procJson.ok) throw new Error(procJson?.error || 'Failed to load procedures');
-            const list: Equipment[] = (eqJson.data as Equipment[]).slice().sort((a, b) => a.name.localeCompare(b.name));
-            const procs: Procedure[] = (procJson.data as Procedure[]).slice().sort((a, b) => a.name.localeCompare(b.name));
+            const list: Equipment[] = sorted(eqJson.data as Equipment[], byName);
+            const procs: Procedure[] = sorted(procJson.data as Procedure[], byName);
             setItems(list);
             setProcedures(procs);
         } catch (e: any) {
@@ -48,19 +49,11 @@ export default function EquipmentList() {
     }, [procedures]);
 
     function onCreated(m: Equipment) {
-        setItems((prev) => {
-            const next = [m, ...prev];
-            next.sort((a, b) => a.name.localeCompare(b.name));
-            return next;
-        });
+        setItems((prev) => sorted([m, ...prev], byName));
     }
 
     function onSaved(updated: Equipment) {
-        setItems((prev) => {
-            const next = prev.map((m) => (m.id === updated.id ? updated : m));
-            next.sort((a, b) => a.name.localeCompare(b.name));
-            return next;
-        });
+        setItems((prev) => sorted(prev.map((m) => (m.id === updated.id ? updated : m)), byName));
         setEditingId(null);
     }
 

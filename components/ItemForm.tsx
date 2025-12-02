@@ -2,6 +2,7 @@
 
 import {useEffect, useMemo, useState} from 'react';
 import type {Equipment, Item, ItemInput} from '@/lib/types';
+import {byName, sorted} from '@/lib/utils/sort';
 
 type Props = {
     homeId: string;
@@ -33,7 +34,7 @@ export default function ItemForm({homeId, locationId, initial, mode, onCancel, o
             const res = await fetch('/api/equipment', {cache: 'no-store'});
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed to load equipment');
-            const list: Equipment[] = (data.data as Equipment[]).slice().sort((a, b) => a.name.localeCompare(b.name));
+            const list: Equipment[] = sorted(data.data as Equipment[], byName);
             setEquipment(list);
         } catch (e: any) {
             setError(e?.message || 'Failed to load equipment');

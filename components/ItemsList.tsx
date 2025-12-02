@@ -3,6 +3,7 @@
 import {useEffect, useMemo, useState} from 'react';
 import Link from 'next/link';
 import type {Equipment, Item, Procedure, Service, Work} from '@/lib/types';
+import {byName, byNameCI, byUpdatedAt, sorted, sortedDesc} from '@/lib/utils/sort';
 import ItemForm from '@/components/ItemForm';
 
 type Props = {
@@ -30,27 +31,26 @@ export default function ItemsList({homeId, locationId}: Props) {
             const res = await fetch(`/api/homes/${homeId}/locations/${locationId}/items`, {cache: 'no-store'});
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed to load');
-            const sorted: Item[] = [...(data.data as Item[])]
-                .sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
-            setItems(sorted);
+            const sortedItems: Item[] = sorted(data.data as Item[], byNameCI);
+            setItems(sortedItems);
 
             // Load procedures, equipment, and services for each item in parallel
             const [procRes, eqRes, servicesList] = await Promise.all([
                 fetch(`/api/procedure`, {cache: 'no-store'}).then(async (r) => {
                     const j = await r.json();
                     if (!r.ok || !j.ok) throw new Error(j?.error || 'Failed to load procedures');
-                    return (j.data as Procedure[]).slice().sort((a, b) => a.name.localeCompare(b.name));
+                    return sorted(j.data as Procedure[], byName);
                 }),
                 fetch(`/api/equipment`, {cache: 'no-store'}).then(async (r) => {
                     const j = await r.json();
                     if (!r.ok || !j.ok) throw new Error(j?.error || 'Failed to load equipment');
-                    return (j.data as Equipment[]).slice().sort((a, b) => a.name.localeCompare(b.name));
+                    return sorted(j.data as Equipment[], byName);
                 }),
-                Promise.all(sorted.map(async (it) => {
+                Promise.all(sortedItems.map(async (it) => {
                     const r = await fetch(`/api/homes/${homeId}/locations/${locationId}/items/${it.id}/services`, {cache: 'no-store'});
                     const j = await r.json();
                     if (!r.ok || !j.ok) throw new Error(j?.error || 'Failed to load services');
-                    const list = (j.data as Service[]).slice().sort((a, b) => a.updatedAt.localeCompare(b.updatedAt)).reverse();
+                    const list = sortedDesc(j.data as Service[], byUpdatedAt);
                     return [it.id, list] as const;
                 }))
             ]);
@@ -90,19 +90,11 @@ export default function ItemsList({homeId, locationId}: Props) {
     }, [homeId, locationId]);
 
     function onCreated(item: Item) {
-        setItems((prev) => {
-            const next = [item, ...prev];
-            next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
-            return next;
-        });
+        setItems((prev) => sorted([item, ...prev], byNameCI));
     }
 
     function onSaved(updated: Item) {
-        setItems((prev) => {
-            const next = prev.map((i) => (i.id === updated.id ? updated : i));
-            next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
-            return next;
-        });
+        setItems((prev) => sorted(prev.map((i) => (i.id === updated.id ? updated : i)), byNameCI));
         setEditingId(null);
     }
 

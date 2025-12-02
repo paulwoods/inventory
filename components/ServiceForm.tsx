@@ -2,6 +2,7 @@
 
 import {useEffect, useMemo, useState} from 'react';
 import type {Procedure, Service, ServiceInput} from '@/lib/types';
+import {byName, sorted} from '@/lib/utils/sort';
 
 type Props = {
     homeId: string;
@@ -27,7 +28,7 @@ export default function ServiceForm({homeId, locationId, itemId, initial, mode, 
             const res = await fetch('/api/procedure', {cache: 'no-store'});
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed to load procedures.');
-            const list: Procedure[] = (data.data as Procedure[]).slice().sort((a, b) => a.name.localeCompare(b.name));
+            const list: Procedure[] = sorted(data.data as Procedure[], byName);
             setProcedures(list);
             if (!initial?.procedureId && list.length > 0) setProcedureId(list[0].id);
         } catch (e: any) {

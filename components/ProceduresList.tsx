@@ -4,6 +4,7 @@ import {useEffect, useState} from 'react';
 import type {Procedure} from '@/lib/types';
 import ProcedureForm from '@/components/ProcedureForm';
 import ReactMarkdown from 'react-markdown';
+import {byNameCI, sorted} from '@/lib/utils/sort';
 
 export default function ProceduresList() {
     const [items, setItems] = useState<Procedure[]>([]);
@@ -20,9 +21,8 @@ export default function ProceduresList() {
             const res = await fetch(`/api/procedure`, {cache: 'no-store'});
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed to load');
-            const sorted: Procedure[] = [...(data.data as Procedure[])]
-                .sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
-            setItems(sorted);
+            const list: Procedure[] = sorted(data.data as Procedure[], byNameCI);
+            setItems(list);
         } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : 'Failed to load';
             setError(msg);
@@ -36,19 +36,11 @@ export default function ProceduresList() {
     }, []);
 
     function onCreated(m: Procedure) {
-        setItems((prev) => {
-            const next = [m, ...prev];
-            next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
-            return next;
-        });
+        setItems((prev) => sorted([m, ...prev], byNameCI));
     }
 
     function onSaved(updated: Procedure) {
-        setItems((prev) => {
-            const next = prev.map((i) => (i.id === updated.id ? updated : i));
-            next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
-            return next;
-        });
+        setItems((prev) => sorted(prev.map((i) => (i.id === updated.id ? updated : i)), byNameCI));
         setEditingId(null);
     }
 
@@ -59,11 +51,7 @@ export default function ProceduresList() {
             const res = await fetch(`/api/procedure/${id}`, {method: 'DELETE'});
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed to delete');
-            setItems((prev) => {
-                const next = prev.filter((i) => i.id !== id);
-                next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
-                return next;
-            });
+            setItems((prev) => sorted(prev.filter((i) => i.id !== id), byNameCI));
         } catch {
             alert('Failed to delete');
         } finally {

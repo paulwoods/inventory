@@ -4,6 +4,7 @@ import {useEffect, useState} from 'react';
 import type {Location} from '@/lib/types';
 import LocationForm from '@/components/LocationForm';
 import Link from 'next/link';
+import {byNameCI, sorted} from '@/lib/utils/sort';
 
 type Props = {
     homeId: string;
@@ -24,9 +25,8 @@ export default function LocationsList({homeId}: Props) {
             const res = await fetch(`/api/homes/${homeId}/locations`, {cache: 'no-store'});
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed to load');
-            const sorted: Location[] = [...(data.data as Location[])]
-                .sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
-            setLocations(sorted);
+            const list: Location[] = sorted(data.data as Location[], byNameCI);
+            setLocations(list);
         } catch (e: any) {
             setError(e?.message || 'Failed to load');
         } finally {
@@ -39,19 +39,11 @@ export default function LocationsList({homeId}: Props) {
     }, [homeId]);
 
     function onCreated(loc: Location) {
-        setLocations((prev) => {
-            const next = [loc, ...prev];
-            next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
-            return next;
-        });
+        setLocations((prev) => sorted([loc, ...prev], byNameCI));
     }
 
     function onSaved(updated: Location) {
-        setLocations((prev) => {
-            const next = prev.map((l) => (l.id === updated.id ? updated : l));
-            next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
-            return next;
-        });
+        setLocations((prev) => sorted(prev.map((l) => (l.id === updated.id ? updated : l)), byNameCI));
         setEditingId(null);
     }
 
@@ -62,11 +54,7 @@ export default function LocationsList({homeId}: Props) {
             const res = await fetch(`/api/homes/${homeId}/locations/${id}`, {method: 'DELETE'});
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed to delete');
-            setLocations((prev) => {
-                const next = prev.filter((l) => l.id !== id);
-                next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
-                return next;
-            });
+            setLocations((prev) => sorted(prev.filter((l) => l.id !== id), byNameCI));
         } catch (e) {
             alert('Failed to delete');
         } finally {

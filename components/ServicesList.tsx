@@ -2,6 +2,7 @@
 
 import {useEffect, useMemo, useState} from 'react';
 import type {Procedure, Service} from '@/lib/types';
+import {byName, byUpdatedAt, sorted, sortedDesc} from '@/lib/utils/sort';
 import ServiceForm from '@/components/ServiceForm';
 
 type Props = {
@@ -31,8 +32,8 @@ export default function ServicesList({homeId, locationId, itemId}: Props) {
             const procJson = await procRes.json();
             if (!svcRes.ok || !svcJson.ok) throw new Error(svcJson?.error || 'Failed to load services');
             if (!procRes.ok || !procJson.ok) throw new Error(procJson?.error || 'Failed to load procedures');
-            const list: Service[] = (svcJson.data as Service[]).slice().sort((a, b) => a.updatedAt.localeCompare(b.updatedAt)).reverse();
-            const procs: Procedure[] = (procJson.data as Procedure[]).slice().sort((a, b) => a.name.localeCompare(b.name));
+            const list: Service[] = sortedDesc(svcJson.data as Service[], byUpdatedAt);
+            const procs: Procedure[] = sorted(procJson.data as Procedure[], byName);
             setServices(list);
             setProcedures(procs);
         } catch (e: any) {
@@ -54,19 +55,11 @@ export default function ServicesList({homeId, locationId, itemId}: Props) {
     }, [procedures]);
 
     function onCreated(s: Service) {
-        setServices((prev) => {
-            const next = [s, ...prev];
-            next.sort((a, b) => a.updatedAt.localeCompare(b.updatedAt)).reverse();
-            return next;
-        });
+        setServices((prev) => sortedDesc([s, ...prev], byUpdatedAt));
     }
 
     function onSaved(updated: Service) {
-        setServices((prev) => {
-            const next = prev.map((s) => (s.id === updated.id ? updated : s));
-            next.sort((a, b) => a.updatedAt.localeCompare(b.updatedAt)).reverse();
-            return next;
-        });
+        setServices((prev) => sortedDesc(prev.map((s) => (s.id === updated.id ? updated : s)), byUpdatedAt));
         setEditingId(null);
     }
 

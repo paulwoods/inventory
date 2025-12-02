@@ -4,6 +4,7 @@ import {useEffect, useState} from 'react';
 import Link from 'next/link';
 import type {Home} from '@/lib/types';
 import HomeForm from '@/components/HomeForm';
+import {byNameCI, sorted} from '@/lib/utils/sort';
 
 export default function HomesList() {
     const [homes, setHomes] = useState<Home[]>([]);
@@ -20,9 +21,8 @@ export default function HomesList() {
             const res = await fetch('/api/homes', {cache: 'no-store'});
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed to load');
-            const sorted: Home[] = [...(data.data as Home[])]
-                .sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
-            setHomes(sorted);
+            const list: Home[] = sorted(data.data as Home[], byNameCI);
+            setHomes(list);
         } catch (e: any) {
             setError(e?.message || 'Failed to load');
         } finally {
@@ -35,19 +35,11 @@ export default function HomesList() {
     }, []);
 
     function onCreated(home: Home) {
-        setHomes((prev) => {
-            const next = [home, ...prev];
-            next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
-            return next;
-        });
+        setHomes((prev) => sorted([home, ...prev], byNameCI));
     }
 
     function onSaved(updated: Home) {
-        setHomes((prev) => {
-            const next = prev.map((h) => (h.id === updated.id ? updated : h));
-            next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
-            return next;
-        });
+        setHomes((prev) => sorted(prev.map((h) => (h.id === updated.id ? updated : h)), byNameCI));
         setEditingId(null);
     }
 
@@ -58,11 +50,7 @@ export default function HomesList() {
             const res = await fetch(`/api/homes/${id}`, {method: 'DELETE'});
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed to delete');
-            setHomes((prev) => {
-                const next = prev.filter((h) => h.id !== id);
-                next.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
-                return next;
-            });
+            setHomes((prev) => sorted(prev.filter((h) => h.id !== id), byNameCI));
         } catch (e) {
             alert('Failed to delete');
         } finally {

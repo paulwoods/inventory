@@ -22,6 +22,11 @@ export default function RootLayout({
                 <img className="app-logo" src="/icon.svg" alt="Inventory logo" width={24} height={24}/>
                 <span className="app-title">Inventory</span>
             </a>
+            <nav className="app-nav" aria-label="Primary">
+                <a href="/">Home</a>
+                <a href="/equipment">Equipment</a>
+                <a href="/procedure">Procedures</a>
+            </nav>
         </header>
         <main className="app-main">
             {children}

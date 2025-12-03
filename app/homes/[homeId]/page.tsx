@@ -3,7 +3,6 @@ import {type Home} from '@/lib/types';
 import LocationsList from '@/components/LocationsList';
 import Link from 'next/link';
 import {getHome} from '@/lib/storage/homes';
-import TitleBar from '@/components/TitleBar';
 import DashboardList from '@/components/DashboardList';
 import HomeTabs from '@/components/HomeTabs';
 
@@ -24,7 +23,6 @@ export default async function HomeLocationsPage({params}: Params) {
             gap: '1rem',
             padding: '2rem'
         }}>
-            <TitleBar/>
             <nav style={{fontSize: 14}}>
                 <Link href="/">← Back to Homes</Link>
             </nav>

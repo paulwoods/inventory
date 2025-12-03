@@ -3,7 +3,6 @@ import Link from 'next/link';
 import {getHome} from '@/lib/storage/homes';
 import {getLocation} from '@/lib/storage/locations';
 import ItemsList from '@/components/ItemsList';
-import TitleBar from '@/components/TitleBar';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +23,6 @@ export default async function LocationItemsPage({params}: Params) {
             gap: '1rem',
             padding: '2rem'
         }}>
-            <TitleBar/>
             <nav style={{fontSize: 14, display: 'flex', gap: '0.5rem'}}>
                 <Link href="/">← Homes</Link>
                 <span>/</span>

@@ -1,6 +1,5 @@
 import {notFound} from 'next/navigation';
 import Link from 'next/link';
-import TitleBar from '@/components/TitleBar';
 import {getHome} from '@/lib/storage/homes';
 import {getLocation} from '@/lib/storage/locations';
 import {getItem} from '@/lib/storage/items';
@@ -67,7 +66,6 @@ export default async function ItemViewPage({params}: Params) {
             gap: '1rem',
             padding: '2rem'
         }}>
-            <TitleBar/>
             <nav style={{fontSize: 14, display: 'flex', gap: '0.5rem'}}>
                 <Link href="/">← Homes</Link>
                 <span>/</span>

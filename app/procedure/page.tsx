@@ -1,5 +1,4 @@
 import ProceduresList from '@/components/ProceduresList';
-import TitleBar from '@/components/TitleBar';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +13,6 @@ export default function ProcedurePage() {
             gap: '1rem',
             padding: '2rem'
         }}>
-            <TitleBar/>
             <h1>Procedures</h1>
             <p style={{color: 'var(--muted)'}}>Manage maintenance procedures. Procedure content supports
                 Markdown.</p>

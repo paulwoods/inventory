@@ -45,3 +45,39 @@ button:hover {
 button:disabled {
     cursor: not-allowed;
 }
+
+/* App header (titlebar) */
+.app-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.9rem;
+    backdrop-filter: blur(4px);
+    background: rgba(11, 16, 32, 0.6);
+    border-bottom: 1px solid rgba(230, 238, 248, 0.08);
+}
+
+.app-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    text-decoration: none;
+    color: var(--fg);
+}
+
+.app-logo {
+    width: 24px;
+    height: 24px;
+}
+
+.app-title {
+    font-weight: 600;
+    letter-spacing: 0.2px;
+}
+
+.app-main {
+    padding: 0.8rem 0.9rem;
+}

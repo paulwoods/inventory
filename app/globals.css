@@ -11,7 +11,12 @@ html, body {
 
 body {
     margin: 0;
-    background: var(--bg);
+    background-color: var(--bg);
+    /* Subtle dark-mode background image */
+    background-image: url('/bg-dark.svg');
+    background-repeat: repeat;
+    background-attachment: fixed;
+    background-position: center top;
     color: var(--fg);
     font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
     Noto Sans, Ubuntu, Cantarell, Helvetica Neue, Arial, "Apple Color Emoji",

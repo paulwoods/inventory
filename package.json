@@ -8,6 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "db:init": "psql \"$DATABASE_URL\" -f db/init.sql",
+    "flyway:migrate": "docker run --rm -v \"$PWD/db/migrations\":/flyway/sql flyway/flyway -url=\"$FLYWAY_URL\" -user=\"$FLYWAY_USER\" -password=\"$FLYWAY_PASSWORD\" migrate",
+    "flyway:info": "docker run --rm -v \"$PWD/db/migrations\":/flyway/sql flyway/flyway -url=\"$FLYWAY_URL\" -user=\"$FLYWAY_USER\" -password=\"$FLYWAY_PASSWORD\" info",
+    "flyway:clean": "docker run --rm -v \"$PWD/db/migrations\":/flyway/sql flyway/flyway -url=\"$FLYWAY_URL\" -user=\"$FLYWAY_USER\" -password=\"$FLYWAY_PASSWORD\" clean",
     "tsc": "tsc"
   },
   "dependencies": {

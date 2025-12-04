@@ -13,11 +13,20 @@ Tech stack
 - Next.js 15 (App Router)
 - React 19
 - TypeScript 5
-- File-based JSON persistence under `data/`
+- PostgreSQL storage via a connection pool (`lib/db.ts`)
+- Flyway SQL migrations (Docker-based scripts)
 
 Getting Started
 
 - Install dependencies: `npm install`
+- Provision a PostgreSQL database and set `DATABASE_URL` in `.env`. Example:
+    - `DATABASE_URL=postgresql://user:pass@localhost:5432/inventory`
+- Apply database schema using Flyway or init script:
+    - Flyway (Docker required):
+        - Set environment variables: `FLYWAY_URL=jdbc:postgresql://localhost:5432/inventory`, `FLYWAY_USER=user`,
+          `FLYWAY_PASSWORD=pass`
+        - Run: `npm run flyway:migrate`
+    - Or init with psql: `npm run db:init`
 - Run dev server: `npm run dev` (open http://localhost:3000)
 - Build: `npm run build`
 - Start: `npm run start`
@@ -32,7 +41,7 @@ Top-level directories and what they are responsible for:
     - `app/page.tsx`: landing page/dashboard.
     - `app/layout.tsx`: root layout and global styles hookup.
     - UI routes like `app/homes/[homeId]/...` render server components for browsing and managing entities.
-    - API routes under `app/api/**` implement CRUD over JSON storage (see API sections below).
+  - API routes under `app/api/**` implement CRUD over PostgreSQL (see API sections below).
 
 - components/
     - Reusable React components for forms and entity lists (e.g., `HomesList`, `LocationsList`, `ItemsList`,
@@ -42,17 +51,16 @@ Top-level directories and what they are responsible for:
 - lib/
     - Application library code shared across routes and components.
     - `lib/types.ts`: central TypeScript types for entities and validation helpers for request payloads.
-    - `lib/storage/`: data-access layer reading/writing JSON files with simple write-queue protection and cascade
-      deletes.
+  - `lib/storage/`: data-access layer using PostgreSQL via `lib/db.ts`.
         - `homes.ts`, `locations.ts`, `items.ts`: hierarchical storage helpers.
         - `equipment.ts`, `procedures.ts`: global entities with relationships.
         - `services.ts`, `work.ts`: scheduling entities and logs related to Items/Procedures.
     - `lib/utils/api.ts`: response helpers to standardize API JSON shapes.
 
-- data/
-    - JSON files used for persistence (auto-created on demand): `homes.json`, `locations.json`, `items.json`,
-      `equipment.json`, `procedures.json`, `services.json`, `work.json`.
-    - Suitable for local development and demos. Not intended for concurrent multi-user production use.
+- db/
+    - Database assets
+    - `init.sql`: convenience script to initialize the schema with `psql`
+    - `migrations/`: Flyway SQL migrations. Initial schema in `V1__init.sql`.
 
 - public/
     - Static assets served as-is (favicons, images, etc.).
@@ -68,8 +76,7 @@ Conventions
 - API responses use a consistent envelope: `{ ok: true, data }` or `{ ok: false, error }` (see `lib/utils/api.ts` and
   `ApiResponse<T>` in `lib/types.ts`).
 - Validation of inputs is centralized in `lib/types.ts` via `validate*Input` functions used by API routes.
-- Storage modules implement simple atomic writes and best-effort cascades to maintain referential integrity across JSON
-  files.
+- Storage modules use parameterized SQL and rely on PostgreSQL constraints and cascading deletes for integrity.
 
 Homes CRUD
 
@@ -77,7 +84,7 @@ Homes CRUD
     - name: required, max 100 chars
     - description: optional, max 1000 chars
 
-- Storage: simple JSON file at data/homes.json (created automatically)
+- Storage: PostgreSQL table `homes`
 
 - API Endpoints
     - GET /api/homes — list all homes
@@ -100,7 +107,7 @@ Locations CRUD (per Home)
     - description: optional, max 1000 chars
     - belongs to a Home (via `homeId`)
 
-- Storage: simple JSON file at data/locations.json (auto-created)
+- Storage: PostgreSQL table `locations`
 
 - API Endpoints (nested under a Home)
     - GET /api/homes/:homeId/locations — list all locations for a Home
@@ -123,7 +130,7 @@ Items CRUD (per Location)
     - description: optional, max 1000 chars
     - belongs to a Location (via `locationId`)
 
-- Storage: simple JSON file at data/items.json (auto-created)
+- Storage: PostgreSQL table `items`
 
 - API Endpoints (nested under a Home and Location)
     - GET /api/homes/:homeId/locations/:locationId/items — list all items for a Location
@@ -145,7 +152,7 @@ Procedure CRUD (Global)
     - name: required, max 100 chars
     - procedure: required, max 4000 chars (Markdown content)
 
-- Storage: simple JSON file at data/procedures.json (auto-created)
+- Storage: PostgreSQL table `procedures`
 
 - API Endpoints
     - GET /api/procedure — list all maintenance procedures
@@ -167,7 +174,7 @@ Equipment CRUD (Global)
     - name: required, max 100 chars
     - procedureIds: array of zero-or-many `Procedure.id` values
 
-- Storage: simple JSON file at data/equipment.json (auto-created)
+- Storage: PostgreSQL tables `equipment` and join table `equipment_procedures`
 
 - API Endpoints
     - GET /api/equipment — list all equipment
@@ -189,7 +196,7 @@ Services and Work (per Item)
     - serviceId: required; parent Service
     - performedAt: ISO timestamp when the service was performed (defaults to now if omitted)
 
-- Storage: JSON files at data/services.json and data/work.json (auto-created)
+- Storage: PostgreSQL tables `services` and `works`
 
 - API Endpoints
     - GET /api/homes/:homeId/locations/:locationId/items/:itemId/services — list services for an Item
@@ -207,9 +214,13 @@ Running and Development Notes
 
 - Path aliases: `@/*` resolves from project root (see `tsconfig.json`). Common import roots: `@/lib/*`,
   `@/components/*`.
-- Server runtime: API routes use the Node.js runtime and operate on local JSON files under `data/`.
-- Data reset: Delete files in `data/` to reset state; they will be recreated on next write.
-- Persistence caution: JSON file storage is for local/dev use; it is not safe for concurrent multi-user production.
+- Server runtime: API routes use the Node.js runtime and operate on PostgreSQL via `lib/db.ts`.
+- Database migrations: Prefer Flyway. Use `npm run flyway:info` to inspect state, `npm run flyway:migrate` to apply,
+  `npm run flyway:clean` to reset (DANGEROUS: drops objects).
+    - Required env vars for Flyway scripts:
+        - `FLYWAY_URL` (jdbc form), e.g. `jdbc:postgresql://localhost:5432/inventory`
+        - `FLYWAY_USER`, `FLYWAY_PASSWORD`
+    - Alternatively, initialize schema with `npm run db:init` using `DATABASE_URL`.
 
 Key Files
 

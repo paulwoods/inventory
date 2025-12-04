@@ -1,46 +1,6 @@
-import {promises as fs} from 'fs';
-import path from 'path';
 import crypto from 'crypto';
 import type {Location, LocationInput} from '@/lib/types';
-import {deleteItemsByLocation} from '@/lib/storage/items';
-import {byNameCI, sorted} from '@/lib/utils/sort';
-
-const DATA_DIR = path.join(process.cwd(), 'data');
-const LOCATIONS_FILE = path.join(DATA_DIR, 'locations.json');
-
-let writeQueue: Promise<void> = Promise.resolve();
-
-async function ensureDataFile() {
-    try {
-        await fs.mkdir(DATA_DIR, {recursive: true});
-        await fs.access(LOCATIONS_FILE);
-    } catch {
-        await fs.writeFile(LOCATIONS_FILE, '[]', 'utf8');
-    }
-}
-
-export async function readLocations(): Promise<Location[]> {
-    await ensureDataFile();
-    const raw = await fs.readFile(LOCATIONS_FILE, 'utf8');
-    try {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) return parsed as Location[];
-        return [];
-    } catch {
-        return [];
-    }
-}
-
-async function atomicWrite(locs: Location[]): Promise<void> {
-    const tmp = LOCATIONS_FILE + '.tmp';
-    await fs.writeFile(tmp, JSON.stringify(locs, null, 2) + '\n', 'utf8');
-    await fs.rename(tmp, LOCATIONS_FILE);
-}
-
-export async function writeLocations(locs: Location[]): Promise<void> {
-    writeQueue = writeQueue.then(() => atomicWrite(locs));
-    return writeQueue;
-}
+import {query} from '@/lib/db';
 
 function nowISO() {
     return new Date().toISOString();
@@ -51,70 +11,96 @@ function newId() {
 }
 
 export async function listLocationsByHome(homeId: string): Promise<Location[]> {
-    const all = await readLocations();
-    return sorted(
-        all.filter(l => l.homeId === homeId),
-        byNameCI
+    const rows = await query<any>(
+        `SELECT id, home_id, name, description, created_at, updated_at
+         FROM locations
+         WHERE home_id = $1
+         ORDER BY lower(name)`,
+        [homeId]
     );
+    return rows.map(r => ({
+        id: r.id,
+        homeId: r.home_id,
+        name: r.name,
+        description: r.description ?? undefined,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+    }));
 }
 
 export async function createLocation(homeId: string, input: LocationInput): Promise<Location> {
-    const all = await readLocations();
-    const loc: Location = {
-        id: newId(),
-        homeId,
-        name: input.name.trim(),
-        description: input.description?.trim() || undefined,
-        createdAt: nowISO(),
-        updatedAt: nowISO(),
-    };
-    all.push(loc);
-    await writeLocations(all);
-    return loc;
+    const id = newId();
+    const name = input.name.trim();
+    const description = input.description?.trim() || undefined;
+    const createdAt = nowISO();
+    const updatedAt = createdAt;
+    await query(
+        `INSERT INTO locations (id, home_id, name, description, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [id, homeId, name, description ?? null, createdAt, updatedAt]
+    );
+    return {id, homeId, name, description, createdAt, updatedAt};
 }
 
 export async function getLocation(homeId: string, id: string): Promise<Location | undefined> {
-    const all = await readLocations();
-    return all.find(l => l.id === id && l.homeId === homeId);
+    const rows = await query<any>(
+        `SELECT id, home_id, name, description, created_at, updated_at
+         FROM locations
+         WHERE id = $1
+           AND home_id = $2`,
+        [id, homeId]
+    );
+    if (rows.length === 0) return undefined;
+    const r = rows[0];
+    return {
+        id: r.id,
+        homeId: r.home_id,
+        name: r.name,
+        description: r.description ?? undefined,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at
+    };
 }
 
 export async function updateLocation(homeId: string, id: string, input: Partial<LocationInput>): Promise<Location | undefined> {
-    const all = await readLocations();
-    const idx = all.findIndex(l => l.id === id && l.homeId === homeId);
-    if (idx === -1) return undefined;
-    const current = all[idx];
-    const updated: Location = {
-        ...current,
-        name: input.name !== undefined ? input.name.trim() : current.name,
-        description: input.description !== undefined ? (input.description?.trim() || undefined) : current.description,
-        updatedAt: nowISO(),
-    };
-    all[idx] = updated;
-    await writeLocations(all);
-    return updated;
+    const current = await getLocation(homeId, id);
+    if (!current) return undefined;
+    const name = input.name !== undefined ? input.name.trim() : current.name;
+    const description = input.description !== undefined ? (input.description?.trim() || undefined) : current.description;
+    const updatedAt = nowISO();
+    await query(`UPDATE locations
+                 SET name=$3,
+                     description=$4,
+                     updated_at=$5
+                 WHERE id = $1
+                   AND home_id = $2`, [id, homeId, name, description ?? null, updatedAt]);
+    return {...current, name, description, updatedAt};
 }
 
 export async function deleteLocation(homeId: string, id: string): Promise<boolean> {
-    const all = await readLocations();
-    const filtered = all.filter(l => !(l.id === id && l.homeId === homeId));
-    if (filtered.length === all.length) return false;
-    await writeLocations(filtered);
-    // Cascade delete items for this location (best-effort)
-    try {
-        await deleteItemsByLocation(id);
-    } catch {
-        // ignore cascade errors
-    }
-    return true;
+    await query(`DELETE
+                 FROM locations
+                 WHERE id = $1
+                   AND home_id = $2`, [id, homeId]);
+    const check = await getLocation(homeId, id);
+    return !check;
 }
 
 export async function deleteLocationsByHome(homeId: string): Promise<void> {
-    const all = await readLocations();
-    const removed = all.filter(l => l.homeId === homeId);
-    const filtered = all.filter(l => l.homeId !== homeId);
-    if (filtered.length !== all.length) {
-        await writeLocations(filtered);
-        // Cascade delete items for removed locations
-        await Promise.allSettled(removed.map(l => deleteItemsByLocation(l.id)));
-    }
+    await query(`DELETE
+                 FROM locations
+                 WHERE home_id = $1`, [homeId]);
+}
+
+export async function readLocations(): Promise<Location[]> {
+    const rows = await query<any>(`SELECT id, home_id, name, description, created_at, updated_at
+                                   FROM locations`);
+    return rows.map(r => ({
+        id: r.id,
+        homeId: r.home_id,
+        name: r.name,
+        description: r.description ?? undefined,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+    }));
 }

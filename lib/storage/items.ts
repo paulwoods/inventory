@@ -1,45 +1,6 @@
-import {promises as fs} from 'fs';
-import path from 'path';
 import crypto from 'crypto';
 import type {Item, ItemInput} from '@/lib/types';
-import {byNameCI, sorted} from '@/lib/utils/sort';
-
-const DATA_DIR = path.join(process.cwd(), 'data');
-const ITEMS_FILE = path.join(DATA_DIR, 'items.json');
-
-let writeQueue: Promise<void> = Promise.resolve();
-
-async function ensureDataFile() {
-    try {
-        await fs.mkdir(DATA_DIR, {recursive: true});
-        await fs.access(ITEMS_FILE);
-    } catch {
-        await fs.writeFile(ITEMS_FILE, '[]', 'utf8');
-    }
-}
-
-export async function readItems(): Promise<Item[]> {
-    await ensureDataFile();
-    const raw = await fs.readFile(ITEMS_FILE, 'utf8');
-    try {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) return parsed as Item[];
-        return [];
-    } catch {
-        return [];
-    }
-}
-
-async function atomicWrite(items: Item[]): Promise<void> {
-    const tmp = ITEMS_FILE + '.tmp';
-    await fs.writeFile(tmp, JSON.stringify(items, null, 2) + '\n', 'utf8');
-    await fs.rename(tmp, ITEMS_FILE);
-}
-
-export async function writeItems(items: Item[]): Promise<void> {
-    writeQueue = writeQueue.then(() => atomicWrite(items));
-    return writeQueue;
-}
+import {query} from '@/lib/db';
 
 function nowISO() {
     return new Date().toISOString();
@@ -50,65 +11,101 @@ function newId() {
 }
 
 export async function listItemsByLocation(locationId: string): Promise<Item[]> {
-    const all = await readItems();
-    return sorted(
-        all.filter(i => i.locationId === locationId),
-        byNameCI
+    const rows = await query<any>(
+        `SELECT id, location_id, name, description, equipment_id, created_at, updated_at
+         FROM items
+         WHERE location_id = $1
+         ORDER BY lower(name)`,
+        [locationId]
     );
+    return rows.map(r => ({
+        id: r.id,
+        locationId: r.location_id,
+        name: r.name,
+        description: r.description ?? undefined,
+        equipmentId: r.equipment_id ?? undefined,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+    }));
 }
 
 export async function createItem(locationId: string, input: ItemInput): Promise<Item> {
-    const all = await readItems();
-    const item: Item = {
-        id: newId(),
-        locationId,
-        name: input.name.trim(),
-        description: input.description?.trim() || undefined,
-        equipmentId: input.equipmentId ? String(input.equipmentId) : undefined,
-        createdAt: nowISO(),
-        updatedAt: nowISO(),
-    };
-    all.push(item);
-    await writeItems(all);
-    return item;
+    const id = newId();
+    const name = input.name.trim();
+    const description = input.description?.trim() || undefined;
+    const equipmentId = input.equipmentId ? String(input.equipmentId) : undefined;
+    const createdAt = nowISO();
+    const updatedAt = createdAt;
+    await query(
+        `INSERT INTO items (id, location_id, name, description, equipment_id, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [id, locationId, name, description ?? null, equipmentId ?? null, createdAt, updatedAt]
+    );
+    return {id, locationId, name, description, equipmentId, createdAt, updatedAt};
 }
 
 export async function getItem(locationId: string, id: string): Promise<Item | undefined> {
-    const all = await readItems();
-    return all.find(i => i.id === id && i.locationId === locationId);
+    const rows = await query<any>(
+        `SELECT id, location_id, name, description, equipment_id, created_at, updated_at
+         FROM items
+         WHERE id = $1
+           AND location_id = $2`,
+        [id, locationId]
+    );
+    if (rows.length === 0) return undefined;
+    const r = rows[0];
+    return {
+        id: r.id,
+        locationId: r.location_id,
+        name: r.name,
+        description: r.description ?? undefined,
+        equipmentId: r.equipment_id ?? undefined,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+    };
 }
 
 export async function updateItem(locationId: string, id: string, input: Partial<ItemInput>): Promise<Item | undefined> {
-    const all = await readItems();
-    const idx = all.findIndex(i => i.id === id && i.locationId === locationId);
-    if (idx === -1) return undefined;
-    const current = all[idx];
-    const updated: Item = {
-        ...current,
-        name: input.name !== undefined ? input.name.trim() : current.name,
-        description: input.description !== undefined ? (input.description?.trim() || undefined) : current.description,
-        equipmentId: Object.prototype.hasOwnProperty.call(input, 'equipmentId')
-            ? (input.equipmentId ? String(input.equipmentId) : undefined)
-            : current.equipmentId,
-        updatedAt: nowISO(),
-    };
-    all[idx] = updated;
-    await writeItems(all);
-    return updated;
+    const current = await getItem(locationId, id);
+    if (!current) return undefined;
+    const name = input.name !== undefined ? input.name.trim() : current.name;
+    const description = input.description !== undefined ? (input.description?.trim() || undefined) : current.description;
+    const equipmentId = Object.prototype.hasOwnProperty.call(input, 'equipmentId')
+        ? (input.equipmentId ? String(input.equipmentId) : undefined)
+        : current.equipmentId;
+    const updatedAt = nowISO();
+    await query(
+        `UPDATE items SET name=$3, description=$4, equipment_id=$5, updated_at=$6 WHERE id=$1 AND location_id=$2`,
+        [id, locationId, name, description ?? null, equipmentId ?? null, updatedAt]
+    );
+    return {...current, name, description, equipmentId, updatedAt};
 }
 
 export async function deleteItem(locationId: string, id: string): Promise<boolean> {
-    const all = await readItems();
-    const filtered = all.filter(i => !(i.id === id && i.locationId === locationId));
-    if (filtered.length === all.length) return false;
-    await writeItems(filtered);
-    return true;
+    await query(`DELETE
+                 FROM items
+                 WHERE id = $1
+                   AND location_id = $2`, [id, locationId]);
+    const check = await getItem(locationId, id);
+    return !check;
 }
 
 export async function deleteItemsByLocation(locationId: string): Promise<void> {
-    const all = await readItems();
-    const filtered = all.filter(i => i.locationId !== locationId);
-    if (filtered.length !== all.length) {
-        await writeItems(filtered);
-    }
+    await query(`DELETE
+                 FROM items
+                 WHERE location_id = $1`, [locationId]);
+}
+
+export async function readItems(): Promise<Item[]> {
+    const rows = await query<any>(`SELECT id, location_id, name, description, equipment_id, created_at, updated_at
+                                   FROM items`);
+    return rows.map(r => ({
+        id: r.id,
+        locationId: r.location_id,
+        name: r.name,
+        description: r.description ?? undefined,
+        equipmentId: r.equipment_id ?? undefined,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+    }));
 }

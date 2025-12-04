@@ -1,47 +1,6 @@
-import {promises as fs} from 'fs';
-import path from 'path';
 import crypto from 'crypto';
 import type {Home, HomeInput} from '@/lib/types';
-import {deleteLocationsByHome} from '@/lib/storage/locations';
-
-const DATA_DIR = path.join(process.cwd(), 'data');
-const HOMES_FILE = path.join(DATA_DIR, 'homes.json');
-
-// Simple write queue to prevent concurrent writes clobbering
-let writeQueue: Promise<void> = Promise.resolve();
-
-async function ensureDataFile() {
-    try {
-        await fs.mkdir(DATA_DIR, {recursive: true});
-        await fs.access(HOMES_FILE);
-    } catch {
-        await fs.writeFile(HOMES_FILE, '[]', 'utf8');
-    }
-}
-
-export async function readHomes(): Promise<Home[]> {
-    await ensureDataFile();
-    const raw = await fs.readFile(HOMES_FILE, 'utf8');
-    try {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) return parsed as Home[];
-        return [];
-    } catch {
-        return [];
-    }
-}
-
-async function atomicWrite(homes: Home[]): Promise<void> {
-    const tmp = HOMES_FILE + '.tmp';
-    await fs.writeFile(tmp, JSON.stringify(homes, null, 2) + '\n', 'utf8');
-    await fs.rename(tmp, HOMES_FILE);
-}
-
-export async function writeHomes(homes: Home[]): Promise<void> {
-    // Chain writes
-    writeQueue = writeQueue.then(() => atomicWrite(homes));
-    return writeQueue;
-}
+import {query} from '@/lib/db';
 
 function nowISO() {
     return new Date().toISOString();
@@ -52,50 +11,69 @@ function newId() {
 }
 
 export async function createHome(input: HomeInput): Promise<Home> {
-    const homes = await readHomes();
-    const home: Home = {
-        id: newId(),
-        name: input.name.trim(),
-        description: input.description?.trim() || undefined,
-        createdAt: nowISO(),
-        updatedAt: nowISO(),
-    };
-    homes.push(home);
-    await writeHomes(homes);
-    return home;
+    const id = newId();
+    const name = input.name.trim();
+    const description = input.description?.trim() || undefined;
+    const createdAt = nowISO();
+    const updatedAt = createdAt;
+    await query(
+        `INSERT INTO homes (id, name, description, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [id, name, description ?? null, createdAt, updatedAt]
+    );
+    return {id, name, description, createdAt, updatedAt};
 }
 
 export async function getHome(id: string): Promise<Home | undefined> {
-    const homes = await readHomes();
-    return homes.find(h => h.id === id);
+    const rows = await query<any>(
+        `SELECT id, name, description, created_at, updated_at
+         FROM homes
+         WHERE id = $1`,
+        [id]
+    );
+    if (rows.length === 0) return undefined;
+    const r = rows[0];
+    return {
+        id: r.id,
+        name: r.name,
+        description: r.description ?? undefined,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+    };
 }
 
 export async function updateHome(id: string, input: Partial<HomeInput>): Promise<Home | undefined> {
-    const homes = await readHomes();
-    const idx = homes.findIndex(h => h.id === id);
-    if (idx === -1) return undefined;
-    const current = homes[idx];
-    const updated: Home = {
-        ...current,
-        name: input.name !== undefined ? input.name.trim() : current.name,
-        description: input.description !== undefined ? (input.description?.trim() || undefined) : current.description,
-        updatedAt: nowISO(),
-    };
-    homes[idx] = updated;
-    await writeHomes(homes);
-    return updated;
+    const existing = await getHome(id);
+    if (!existing) return undefined;
+    const name = input.name !== undefined ? input.name.trim() : existing.name;
+    const description = input.description !== undefined ? (input.description?.trim() || undefined) : existing.description;
+    const updatedAt = nowISO();
+    await query(`UPDATE homes
+                 SET name=$2,
+                     description=$3,
+                     updated_at=$4
+                 WHERE id = $1`, [id, name, description ?? null, updatedAt]);
+    return {id, name, description, createdAt: existing.createdAt, updatedAt};
 }
 
 export async function deleteHome(id: string): Promise<boolean> {
-    const homes = await readHomes();
-    const filtered = homes.filter(h => h.id !== id);
-    if (filtered.length === homes.length) return false;
-    await writeHomes(filtered);
-    // Cascade delete locations for this home (best-effort)
-    try {
-        await deleteLocationsByHome(id);
-    } catch {
-        // ignore cascade errors
-    }
-    return true;
+    const rows = await query<any>(`DELETE
+                                   FROM homes
+                                   WHERE id = $1`, [id]);
+    // pg doesn't return rowCount via our helper; run EXISTS check
+    // Instead, we can check affected via selecting after delete
+    const check = await getHome(id);
+    return !check;
+}
+
+export async function readHomes(): Promise<Home[]> {
+    const rows = await query<any>(`SELECT id, name, description, created_at, updated_at
+                                   FROM homes`);
+    return rows.map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        description: r.description ?? undefined,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+    }));
 }

@@ -11,7 +11,8 @@ export const dynamic = 'force-dynamic';
 type Params = { params: { homeId: string } };
 
 export default async function HomeLocationsPage({params}: Params) {
-    const home = (await getHome(params.homeId)) as Home | undefined;
+    const {homeId} = await params
+    const home = (await getHome(homeId)) as Home | undefined;
     if (!home) return notFound();
     return (
         <main style={{

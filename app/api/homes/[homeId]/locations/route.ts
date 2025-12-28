@@ -8,12 +8,13 @@ export const runtime = 'nodejs';
 type Params = { params: { homeId: string } };
 
 export async function GET(_req: Request, {params}: Params) {
-    const home = await getHome(params.homeId);
+    const {homeId} = await params
+    const home = await getHome(homeId);
     if (!home) {
         const body: ApiResponse<never> = {ok: false, error: 'Home not found.'};
         return NextResponse.json(body, {status: 404});
     }
-    const locations = await listLocationsByHome(params.homeId);
+    const locations = await listLocationsByHome(homeId);
     const body: ApiResponse<Location[]> = {ok: true, data: locations};
     return NextResponse.json(body, {status: 200});
 }

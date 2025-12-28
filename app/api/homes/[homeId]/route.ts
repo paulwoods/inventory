@@ -4,10 +4,10 @@ import {type ApiResponse, type Home, validateHomeInput} from '@/lib/types';
 
 export const runtime = 'nodejs';
 
-type Params = { params: { homeId: string } };
+type Params = { params: Promise<{ homeId: string }> };
 
 export async function GET(_req: Request, {params}: Params) {
-    const {homeId} = await params
+    const {homeId} = await params;
     const home = await getHome(homeId);
     if (!home) {
         const body: ApiResponse<never> = {ok: false, error: 'Home not found.'};
@@ -19,7 +19,7 @@ export async function GET(_req: Request, {params}: Params) {
 
 export async function PUT(req: Request, {params}: Params) {
     try {
-        const {homeId} = await params
+        const {homeId} = await params;
         const json = await req.json();
         const error = validateHomeInput({name: json?.name ?? '', description: json?.description ?? ''});
         if (error) {
@@ -40,7 +40,7 @@ export async function PUT(req: Request, {params}: Params) {
 }
 
 export async function DELETE(_req: Request, {params}: Params) {
-    const {homeId} = await params
+    const {homeId} = await params;
     const ok = await deleteHome(homeId);
     if (!ok) {
         const body: ApiResponse<never> = {ok: false, error: 'Home not found.'};

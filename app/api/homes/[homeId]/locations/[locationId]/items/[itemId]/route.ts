@@ -7,20 +7,21 @@ import {type ApiResponse, type Item, validateItemInput} from '@/lib/types';
 
 export const runtime = 'nodejs';
 
-type Params = { params: { homeId: string; locationId: string; itemId: string } };
+type Params = { params: Promise<{ homeId: string; locationId: string; itemId: string }> };
 
 export async function GET(_req: Request, {params}: Params) {
-    const home = await getHome(params.homeId);
+    const {homeId, locationId, itemId} = await params;
+    const home = await getHome(homeId);
     if (!home) {
         const body: ApiResponse<never> = {ok: false, error: 'Home not found.'};
         return NextResponse.json(body, {status: 404});
     }
-    const loc = await getLocation(params.homeId, params.locationId);
+    const loc = await getLocation(homeId, locationId);
     if (!loc) {
         const body: ApiResponse<never> = {ok: false, error: 'Location not found.'};
         return NextResponse.json(body, {status: 404});
     }
-    const item = await getItem(params.locationId, params.itemId);
+    const item = await getItem(locationId, itemId);
     if (!item) {
         const body: ApiResponse<never> = {ok: false, error: 'Item not found.'};
         return NextResponse.json(body, {status: 404});
@@ -30,12 +31,13 @@ export async function GET(_req: Request, {params}: Params) {
 }
 
 export async function PUT(req: Request, {params}: Params) {
-    const home = await getHome(params.homeId);
+    const {homeId, locationId, itemId} = await params;
+    const home = await getHome(homeId);
     if (!home) {
         const body: ApiResponse<never> = {ok: false, error: 'Home not found.'};
         return NextResponse.json(body, {status: 404});
     }
-    const loc = await getLocation(params.homeId, params.locationId);
+    const loc = await getLocation(homeId, locationId);
     if (!loc) {
         const body: ApiResponse<never> = {ok: false, error: 'Location not found.'};
         return NextResponse.json(body, {status: 404});
@@ -57,7 +59,7 @@ export async function PUT(req: Request, {params}: Params) {
                 error: 'Equipment not found.'
             } as ApiResponse<never>, {status: 400});
         }
-        const updated = await updateItem(params.locationId, params.itemId, {
+        const updated = await updateItem(locationId, itemId, {
             name: json.name,
             description: json.description,
             equipmentId
@@ -75,21 +77,22 @@ export async function PUT(req: Request, {params}: Params) {
 }
 
 export async function DELETE(_req: Request, {params}: Params) {
-    const home = await getHome(params.homeId);
+    const {homeId, locationId, itemId} = await params;
+    const home = await getHome(homeId);
     if (!home) {
         const body: ApiResponse<never> = {ok: false, error: 'Home not found.'};
         return NextResponse.json(body, {status: 404});
     }
-    const loc = await getLocation(params.homeId, params.locationId);
+    const loc = await getLocation(homeId, locationId);
     if (!loc) {
         const body: ApiResponse<never> = {ok: false, error: 'Location not found.'};
         return NextResponse.json(body, {status: 404});
     }
-    const ok = await deleteItem(params.locationId, params.itemId);
+    const ok = await deleteItem(locationId, itemId);
     if (!ok) {
         const body: ApiResponse<never> = {ok: false, error: 'Item not found.'};
         return NextResponse.json(body, {status: 404});
     }
-    const body: ApiResponse<{ id: string }> = {ok: true, data: {id: params.itemId}};
+    const body: ApiResponse<{ id: string }> = {ok: true, data: {id: itemId}};
     return NextResponse.json(body, {status: 200});
 }

@@ -8,10 +8,10 @@ import HomeTabs from '@/components/HomeTabs';
 
 export const dynamic = 'force-dynamic';
 
-type Params = { params: { homeId: string } };
+type Params = { params: Promise<{ homeId: string }> };
 
 export default async function HomeLocationsPage({params}: Params) {
-    const {homeId} = await params
+    const {homeId} = await params;
     const home = (await getHome(homeId)) as Home | undefined;
     if (!home) return notFound();
     return (

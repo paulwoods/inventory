@@ -6,12 +6,13 @@ import ItemsList from '@/components/ItemsList';
 
 export const dynamic = 'force-dynamic';
 
-type Params = { params: { homeId: string; locationId: string } };
+type Params = { params: Promise<{ homeId: string; locationId: string }> };
 
 export default async function LocationItemsPage({params}: Params) {
-    const home = await getHome(params.homeId);
+    const {homeId, locationId} = await params;
+    const home = await getHome(homeId);
     if (!home) return notFound();
-    const location = await getLocation(params.homeId, params.locationId);
+    const location = await getLocation(homeId, locationId);
     if (!location) return notFound();
     return (
         <main style={{

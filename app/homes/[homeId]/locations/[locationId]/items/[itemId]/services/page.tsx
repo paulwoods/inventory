@@ -5,16 +5,17 @@ import {getLocation} from '@/lib/storage/locations';
 import {getItem} from '@/lib/storage/items';
 import ServicesList from '@/components/ServicesList';
 
-type Params = { params: { homeId: string; locationId: string; itemId: string } };
+type Params = { params: Promise<{ homeId: string; locationId: string; itemId: string }> };
 
 export const dynamic = 'force-dynamic';
 
 export default async function ItemServicesPage({params}: Params) {
-    const home = await getHome(params.homeId);
+    const {homeId, locationId, itemId} = await params;
+    const home = await getHome(homeId);
     if (!home) return notFound();
-    const location = await getLocation(params.homeId, params.locationId);
+    const location = await getLocation(homeId, locationId);
     if (!location) return notFound();
-    const item = await getItem(params.locationId, params.itemId);
+    const item = await getItem(locationId, itemId);
     if (!item) return notFound();
 
     return (

@@ -7,14 +7,15 @@ import {type ApiResponse, type Service, validateServiceInput} from '@/lib/types'
 
 export const runtime = 'nodejs';
 
-type Params = { params: { homeId: string; locationId: string; itemId: string } };
+type Params = { params: Promise<{ homeId: string; locationId: string; itemId: string }> };
 
 export async function GET(_req: Request, {params}: Params) {
-    const home = await getHome(params.homeId);
+    const {homeId, locationId, itemId} = await params;
+    const home = await getHome(homeId);
     if (!home) return NextResponse.json({ok: false, error: 'Home not found.'} as ApiResponse<never>, {status: 404});
-    const loc = await getLocation(params.homeId, params.locationId);
+    const loc = await getLocation(homeId, locationId);
     if (!loc) return NextResponse.json({ok: false, error: 'Location not found.'} as ApiResponse<never>, {status: 404});
-    const item = await getItem(params.locationId, params.itemId);
+    const item = await getItem(locationId, itemId);
     if (!item) return NextResponse.json({ok: false, error: 'Item not found.'} as ApiResponse<never>, {status: 404});
     const services = await listServicesByItem(item.id);
     const body: ApiResponse<Service[]> = {ok: true, data: services};
@@ -22,11 +23,12 @@ export async function GET(_req: Request, {params}: Params) {
 }
 
 export async function POST(req: Request, {params}: Params) {
-    const home = await getHome(params.homeId);
+    const {homeId, locationId, itemId} = await params;
+    const home = await getHome(homeId);
     if (!home) return NextResponse.json({ok: false, error: 'Home not found.'} as ApiResponse<never>, {status: 404});
-    const loc = await getLocation(params.homeId, params.locationId);
+    const loc = await getLocation(homeId, locationId);
     if (!loc) return NextResponse.json({ok: false, error: 'Location not found.'} as ApiResponse<never>, {status: 404});
-    const item = await getItem(params.locationId, params.itemId);
+    const item = await getItem(locationId, itemId);
     if (!item) return NextResponse.json({ok: false, error: 'Item not found.'} as ApiResponse<never>, {status: 404});
     try {
         const json = await req.json();
